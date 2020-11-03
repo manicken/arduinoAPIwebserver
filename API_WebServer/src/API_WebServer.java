@@ -339,7 +339,6 @@ public class API_WebServer implements Tool {
 	
 	public String getJSON()
 	{
-		String filePath = "tools\\API_WebServer\\tool\\settings.json";
 		File file = new File(sketch.getFolder(), "GUI_TOOL.json");
 		boolean exists = file.exists();
 		if (exists)
@@ -358,6 +357,57 @@ public class API_WebServer implements Tool {
 			System.out.println("GUI_TOOL.json file not found!");
 			return "";
 		}
+	}
+	public void SetJSON(String contents)
+	{
+		try {
+            // Constructs a FileWriter given a file name, using the platform's default charset
+            FileWriter file = new FileWriter(sketch.getFolder() + "/GUI_TOOL.json");
+			file.write(contents);
+			file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+ 
+        }
+	}
+	
+	public void RemoveFilesNotInJSON(JSONArray arr)
+	{
+		System.out.println("RemoveFilesNotInJSON");
+		ArrayList<String> filesToRemove = new ArrayList<String>();
+		
+		// this removes files in the sketch that is not present in the 
+		// JSONArray. To not interfere with the current sketch.getCodeCount()
+		// it stores filenames to be removed in a temporary Array
+		for (int i = 0; i < sketch.getCodeCount(); i++)
+		{
+			SketchFile sf = sketch.getFile(i);
+			if (sf.isPrimary()) continue; // never remove primary sketch ino file
+			
+			String fileName = sf.getFileName();
+			if (!CheckIfFileExistsInJsonArray(fileName, arr))
+				filesToRemove.add(fileName); // store it for later
+		}
+		// now it can remove files 
+		for (int i = 0; i < filesToRemove.size(); i++)
+		{
+			String fileName = filesToRemove.get(i);
+			System.out.println("Removing file:" + fileName);
+			removeFile(fileName);
+		}
+	}
+	private boolean CheckIfFileExistsInJsonArray(String fileName, JSONArray arr)
+	{
+		//System.out.println("CheckIfFileExistsInJsonArray:" + fileName);
+		for (int i = 0; i < arr.length(); i++)
+		{
+			JSONObject e = arr.getJSONObject(i);
+			String name = e.getString("name");
+			//System.out.println("against: " + name);
+			if (name.equals(fileName))
+				return true;
+		}
+		return false;
 	}
 	
 	public void editor_addTab(SketchFile sketchFile, String contents)
@@ -440,7 +490,7 @@ public class API_WebServer implements Tool {
 			System.err.println(e);
 			return false;
 		}
-		System.out.println("folder: " + folder.toString());
+		//System.out.println("folder: " + folder.toString());
 		File newFile = new File(folder, fileName);
 		int fileIndex = sketch.findFileIndex(newFile);
 		if (fileIndex >= 0) { // file allready exist, just change the contents.
@@ -542,8 +592,13 @@ class MyHttpHandler implements HttpHandler
 		{ 
 		   //System.out.println("GET");
 		   requestParamValue = handleGetRequest(httpExchange);
-		   System.out.println("GET request params: " + requestParamValue);
-		   if (requestParamValue.equals("compile"))
+		   if (!requestParamValue.equals("ping"))
+			System.out.println("GET request params: " + requestParamValue);
+		   if (requestParamValue.equals("ping"))
+		   {
+			   // do nothing, a OK is default to send back
+		   }
+		   else if (requestParamValue.equals("compile"))
 		   {
 			   editor.setAlwaysOnTop(false);
 			   editor.setAlwaysOnTop(true);
@@ -595,24 +650,26 @@ class MyHttpHandler implements HttpHandler
 	public void ParsePOST_JSON(String data)
 	{
 		JSONObject jsonObj = new JSONObject(data);
-		boolean removeUnusedFiles = jsonObj.getBoolean("removeUnusedFiles"); // this should be implemented later
+		String command = jsonObj.getString("command"); // this should be implemented later
 		JSONArray arr = jsonObj.getJSONArray("files");
+		
+		try{api.RemoveFilesNotInJSON(arr);}
+		catch (Exception e) {e.printStackTrace();}
 		
 		for (int i = 0; i < arr.length(); i++)
 		{
 			JSONObject e = arr.getJSONObject(i);
 			String name = e.getString("name");
-			//if (!name.endsWith(".h"))
-			//	name += ".h";
-			String cpp = e.getString("cpp");
-			//editor.addNewFile(name, cpp); // need modificzation of arduino IDE source code
-			
-			api.addNewFile(name, cpp); // uses reflection to use private members
-			//TODO: fix so that tabs/files that allready exist in the sketch is removed if they not exist in the json, this should be optional
+			String contents = e.getString("contents");
+			if (name.equals("GUI_TOOL.json"))
+				api.SetJSON(contents);
+			else
+				api.addNewFile(name, contents); // uses reflection to use private members
 		}
 		//System.out.println(data);
 		editor.handleSave(true);
 	}
+	
 	
 	private String handleGetRequest(HttpExchange httpExchange) {
 		httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
@@ -649,19 +706,7 @@ class MyHttpHandler implements HttpHandler
 
 	private void handleResponse(HttpExchange httpExchange, String htmlResponse)  throws  IOException {
 		OutputStream outputStream = httpExchange.getResponseBody();
-		/*StringBuilder htmlBuilder = new StringBuilder();
 
-		htmlBuilder.append("<html>")
-					.append("<body>")
-					.append("<h1>")
-					.append("OK")
-					.append("</h1>")
-					.append("</body>")
-					.append("</html>");
-
-		String htmlResponse = htmlBuilder.toString();*/
-		//System.out.println("htmlResponse:"+htmlResponse);
-	  
 		// this line is a must
 		httpExchange.sendResponseHeaders(200, htmlResponse.length());
 		// additional data to send back
