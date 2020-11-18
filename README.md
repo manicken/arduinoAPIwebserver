@@ -41,15 +41,19 @@ http://localhost:8080?cmd=ping
 
 
 ## Requirements
+```
 Java-WebSocket-1.5.1.jar (included) from https://github.com/TooTallNate/Java-WebSocket
 json-20200518.jar (included) from https://github.com/stleary/JSON-java
+```
 ## Extension Settings
 
 ## Known Issues
+```
 when using terminal capture and send (allways on in this version)
 and using compile output with alot of data the data sent to client is alot after
 and continues to output long after compilation is finished.
 Fix is to not use compile output log. The result is allways printed.
+```
 ## Release Notes
 
 ### 1.0.0
