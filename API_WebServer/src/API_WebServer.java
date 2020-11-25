@@ -1140,6 +1140,9 @@ class myWebSocketServer extends WebSocketServer {
 		ac.setShowDescWindow(true);
 		ac.setParameterAssistanceEnabled(true);
 		ac.install(textArea);
+
+		textArea.setToolTipSupplier((ToolTipSupplier)provider);
+		ToolTipManager.sharedInstance().registerComponent(textArea);
 		System.out.println("AutoCompleteProvider is now installed");
 	}
 	  /**
