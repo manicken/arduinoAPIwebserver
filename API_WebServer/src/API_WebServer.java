@@ -423,8 +423,8 @@ public class API_WebServer implements Tool {
 	public String GetArduinoRootDir()
 	{
 	  try{
-	    File file = new File(API_WebServer.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-	    return file.getParentFile().getParentFile().getParentFile().getParent();
+	    File file = BaseNoGui.getToolsFolder();//new File(API_WebServer.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+	    return file.getParentFile().getAbsolutePath();//.getParentFile().getParentFile().getParent();
 	    }catch (Exception e) {
 	    e.printStackTrace();
 	      return "";

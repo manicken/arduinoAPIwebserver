@@ -12,11 +12,7 @@ cd bin
 jar cvf API_WebServer.jar *
 cd ..
 copy .\bin\API_WebServer.jar .\tool\API_WebServer.jar
-copy .\tool\*.* %arduinoInstallDir%\tools\API_WebServer\tool\*.*
-copy .\src\*.* %arduinoInstallDir%\tools\API_WebServer\src\*.*
 
-copy .\tool\*.* %arduinoInstallDir2%\tools\API_WebServer\tool\*.*
-copy .\src\*.* %arduinoInstallDir2%\tools\API_WebServer\src\*.*
 echo ***************
 echo *** Success ***
 echo ***************

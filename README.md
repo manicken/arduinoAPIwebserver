@@ -4,19 +4,25 @@ This extension make it possible to take control of Arduino IDE from a Web Page b
 
 ## Install
 
-global:<br>
+* global:<br>
 &nbsp;&nbsp;download this repository by either Code-Download Zip or<br>
 &nbsp;&nbsp;&nbsp;&nbsp;by git clone https://github.com/manicken/arduinoAPIwebserver.git<br>
 &nbsp;&nbsp;then extract/open the repository<br>
 
-on windows / linux:<br>
+* on windows / linux:<br>
 &nbsp;&nbsp;copy folder API_WebServer to [Arduino IDE install location]/tools directory<br>
 &nbsp;&nbsp;ex: /Arduino-1.8.13/tools<br>
 
-on mac:<br>
+* on mac:<br>
 &nbsp;&nbsp;In Applications right click and click on "Show Package Contents", then browse Contents -> Java -> tools<br>
 &nbsp;&nbsp;by holding the Option key(copy) drag folder API_WebServer from the downloaded repository to the open tools folder above<br>
 &nbsp;&nbsp;select replace it you allready have an older version<br>
+
+* global:<br>
+&nbsp;&nbsp;In sketchbook folder (defined in Arduino IDE - Preferenses):<br>
+&nbsp;&nbsp;make a new folder in the above defined sketchbook folder<br>
+&nbsp;&nbsp;called tools<br>
+&nbsp;&nbsp;then copy the API_WebServer from the repository into this new "tools" folder.<br>
 
 ## Compiling
 
