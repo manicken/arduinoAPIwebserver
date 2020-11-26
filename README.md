@@ -17,6 +17,16 @@ on mac:
 &nbsp;&nbsp;by holding the Option key(copy) drag folder API_WebServer from the downloaded repository to the open tools folder above
 &nbsp;&nbsp;select replace it you allready have an older version
 
+## Compiling
+
+Download and Install Java SDK8 (1.8) 32bit
+(Arduino IDE uses Java 8 (1.8))
+
+two script is provided:
+&nbsp;&nbsp;for windows the .bat file
+&nbsp;&nbsp;for linux the .sh file
+&nbsp;&nbsp;for mac os maybe also the .sh file
+
 ## Features
 
 * POST request with data contents in json format:
