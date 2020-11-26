@@ -102,10 +102,10 @@ json-20200518.jar (included) from [JSON-Java](https://github.com/stleary/JSON-ja
 
 ## Known Issues
 ```
-when using terminal capture and send (allways on in this version)
-and using compile output with alot of data the data sent to client is alot after
-and continues to output long after compilation is finished.
-Fix is to not use compile output log. The result is allways printed.
+when using terminal capture and send (allways on in this version)<br>
+and using compile output with alot of data the data sent to client is alot after<br>
+and continues to output long after compilation is finished.<br>
+Fix is to not use compile output log. The result is allways printed.<br>
 ```
 ## Release Notes
 
@@ -127,23 +127,26 @@ Add terminal capture and send to connected WebSocket client
 
 ### 1.0.4
 
-Add POST JSON data removeOtherFiles
-Fix File write flag so that it overwrites existing files
+* Add POST JSON data removeOtherFiles<
+* Fix File write flag so that it overwrites existing files
 
 ### 1.0.5
 
-Add sketch location keywords.txt file
-Add POST JSON data keywords that also save to sketch location keywords_temp.txt
-in POST JSON the three main objects "files", "removeOtherFiles" and "keywords" is optional
+* Add sketch location keywords.txt file
+* Add POST JSON data keywords that also save to sketch location keywords_temp.txt
+* in POST JSON the three main objects "files", "removeOtherFiles" and "keywords" is optional
 
 ### 1.0.6
 
-Splitted out classes from API_Webserver.java
-ConfigDialog.java
-MyConsoleOutputStream.java (not currently used) replaced by simpler System.out hook
-MyHttpHandler.java
-MyWebSocketServer.java
-AutoCompleteProvider.java finally Arduino IDE gets autocomplete
-                          (this is getting a seperate repository as additional plugin)
+* Splitted out classes from API_Webserver.java
+* ConfigDialog.java
+* MyConsoleOutputStream.java (not currently used) replaced by simpler System.out hook
+* MyHttpHandler.java
+* MyWebSocketServer.java
+* AutoCompleteProvider.java<br>
+&nbsp;&nbsp;&nbsp;&nbsp;finally Arduino IDE gets autocomplete (experimental)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;can be activated on Tools-API Web Server-activate autocomplete<br>
+&nbsp;&nbsp;&nbsp;&nbsp;define file is in tool dir of API_WebServer called c.xml<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(later this is getting a seperate repository as additional plugin)<br>
 
 -----------------------------------------------------------------------------------------------------------
