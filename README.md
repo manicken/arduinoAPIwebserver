@@ -2,6 +2,20 @@
 
 This extension make it possible to take control of Arduino IDE from a Web Page based client.
 
+## Install
+
+global:
+&nbsp;&nbsp;download this repository by either Code-Download Zip or by git clone https://github.com/manicken/arduinoAPIwebserver.git
+&nbsp;&nbsp;then extract/open the repository
+
+on windows / linux:
+&nbsp;&nbsp;copy folder API_WebServer to [Arduino IDE install location]/tools directory
+&nbsp;&nbsp;ex: /Arduino-1.8.13/tools
+
+on mac:
+&nbsp;&nbsp;In Applications right click and click on "Show Package Contents", then browse Contents -> Java -> tools
+&nbsp;&nbsp;by holding the Option key(copy) drag folder API_WebServer from the downloaded repository to the open tools folder above
+&nbsp;&nbsp;select replace it you allready have an older version
 
 ## Features
 
@@ -101,5 +115,15 @@ Fix File write flag so that it overwrites existing files
 Add sketch location keywords.txt file
 Add POST JSON data keywords that also save to sketch location keywords_temp.txt
 in POST JSON the three main objects "files", "removeOtherFiles" and "keywords" is optional
+
+### 1.0.6
+
+Splitted out classes from API_Webserver.java
+ConfigDialog.java
+MyConsoleOutputStream.java (not currently used) replaced by simpler System.out hook
+MyHttpHandler.java
+MyWebSocketServer.java
+AutoCompleteProvider.java finally Arduino IDE gets autocomplete
+                          (this is getting a seperate repository as additional plugin)
 
 -----------------------------------------------------------------------------------------------------------

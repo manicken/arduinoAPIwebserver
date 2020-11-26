@@ -20,7 +20,7 @@
   Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-package com.API_WebServer;
+package com.manicken;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,11 +33,7 @@ import java.io.InputStreamReader;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import org.java_websocket.WebSocket;
-import org.java_websocket.drafts.Draft;
-import org.java_websocket.drafts.Draft_6455;
-import org.java_websocket.handshake.ClientHandshake;
-import org.java_websocket.server.WebSocketServer;
+
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -84,68 +80,32 @@ import java.awt.Desktop;
 import java.net.URI;
 
 
-
-import org.fife.ui.autocomplete.*;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
-import org.fife.ui.rtextarea.ToolTipSupplier;
-import java.util.Arrays;
-
-class ConfigDialog extends JPanel
-{
-	private JLabel lblServerport;
-	public JCheckBox chkAutostart;
-	public JCheckBox chkDebugMode;	
-    public JTextField txtServerport;
-
-    public ConfigDialog() {
-        //construct components
-		lblServerport = new JLabel ("Server Port");
-		chkAutostart = new JCheckBox ("Autostart Server at Arduino IDE start");
-		chkDebugMode = new JCheckBox ("Activates some debug output");
-        txtServerport = new JTextField (5);
-
-        //adjust size and set layout
-        setPreferredSize (new Dimension (263, 129));
-        setLayout (null);
-
-        //add components
-		add (lblServerport);
-        add (chkAutostart);
-		add (txtServerport);
-		add (chkDebugMode);
-
-        //set component bounds (only needed by Absolute Positioning)
-        lblServerport.setBounds (5, 5, 100, 25);
-        txtServerport.setBounds (85, 5, 100, 25);
-		chkAutostart.setBounds (4, 30, 232, 30);
-		chkDebugMode.setBounds (4, 65, 232, 30);
-    }
-
-}
+import com.manicken.AutoCompleteProvider;
+import com.manicken.ConfigDialog;
+import com.manicken.MyConsoleOutputStream;
+import com.manicken.MyWebSocketServer;
+import com.manicken.MyHttpHandler;
 
 /**
  * Example Tools menu entry.
  */
 public class API_WebServer implements Tool {
 	boolean debugPrint = false;
-	Editor editor;
-	
+
+	Base base;// for the API uses reflection to get
+	Editor editor;// for the API
 	Sketch sketch; // for the API
 	ArrayList<EditorTab> tabs; // for the API uses reflection to get
 	EditorHeader header; // for the API uses reflection to get
 	Runnable runHandler; // for the API uses reflection to get
 	Runnable presentHandler; // for the API uses reflection to get
 
-	Base base;
-	
-	PdeKeywords pdeKeywords;
-	Map<String, String> keywordOldToken; // only need this
+	PdeKeywords pdeKeywords; // for the API uses reflection to get
+	Map<String, String> keywordOldToken; // for the API uses reflection to get
 	String sketchKeywordsFileName = "keywords.txt";
 	String sketchKeywordsTempFileName = "keywords_temp.txt"; // updated by external editor
 	
-	JMenu toolsMenu;
+	JMenu toolsMenu; // for the API uses reflection to get
 	
 	HttpServer server;
 	
@@ -158,30 +118,16 @@ public class API_WebServer implements Tool {
 	boolean autostart = true; // replaced by code down
 	
 	boolean started = false;
-	public myWebSocketServer cs;
+	public MyWebSocketServer cs;
 
 	EditorConsole editorConsole;
-	private ConsoleOutputStream2 out;
-	private ConsoleOutputStream2 err;
+	
 	private SimpleAttributeSet console_stdOutStyle;
 	private SimpleAttributeSet console_stdErrStyle;
 	String outFgColorHex;
 	String outBgColorHex;
 	String errFgColorHex;
 	String errBgColorHex;
-
-	public synchronized void setCurrentEditorConsole() {
-		if (out == null) {
-		  out = new ConsoleOutputStream2(console_stdOutStyle, System.out, cs);
-		  System.setOut(new PrintStream(out, true));
-	
-		  err = new ConsoleOutputStream2(console_stdErrStyle, System.err, cs);
-		  System.setErr(new PrintStream(err, true));
-		}
-	
-		out.setCurrentEditorConsole(editorConsole);
-		err.setCurrentEditorConsole(editorConsole);
-	  }
 
 	public void init(Editor editor) { // required by tool loader
 		this.editor = editor;
@@ -211,10 +157,6 @@ public class API_WebServer implements Tool {
 				cs_SendWithStyle(outFgColorHex, outBgColorHex, x + "<br>");
 				super.println(x);
 			}
-			/*public void print(String x) {
-				cs_SendWithStyle(outFgColorHex, outBgColorHex, "print:" + x);
-				super.print(x);
-			}*/
 		};
 		System.setOut(psOut);
 
@@ -224,20 +166,13 @@ public class API_WebServer implements Tool {
 				cs_SendWithStyle(errFgColorHex, errBgColorHex, x + "<br>");
 				super.println(x);
 			}
-			/*public void print(String x) {
-				cs_SendWithStyle(errFgColorHex, errBgColorHex, x);
-				super.print(x);
-			}*/
 		};
 		System.setErr(psErr);
 	}
 	private void cs_SendWithStyle(String fgColorHex, String bgColorHex, String text)
 	{
-		if (cs != null)
-		{
-			try { cs.broadcast("<span style=\"color:"+fgColorHex+";background-color:"+bgColorHex+";\">" + text.replace("\r\n", "<br>").replace("\r", "<br>").replace("\n", "<br>") + "</span>"); }
-			catch (Exception ex) { /*ignore*/ }
-		}
+		if (cs == null) return;
+		cs.SendWithHtmlStyle(fgColorHex, bgColorHex, text);
 	}
 	public void run() {// required by tool loader
 		LoadSettings();
@@ -249,7 +184,7 @@ public class API_WebServer implements Tool {
 	public void startWebsocketServer()
 	{
 		try {
-			cs = new myWebSocketServer(3000);
+			cs = new MyWebSocketServer(3000);
 			cs.start();
 			} catch (Exception e)
 			{
@@ -260,7 +195,22 @@ public class API_WebServer implements Tool {
 	public String getMenuTitle() {// required by tool loader
 		return thisToolMenuTitle;
 	}
-	
+	private Object ReflectGetField(String name, Object src)
+	{
+		try {
+		Field f = src.getClass().getDeclaredField(name);
+		f.setAccessible(true);
+		return f.get(src);
+		}
+		catch (Exception e)
+		{
+			System.err.println("****************************************");
+			System.err.println("************cannot reflect**************");
+			System.err.println("****************************************");
+			e.printStackTrace();
+			return null;
+		}
+	}
 	private void init()
 	{
 		if (started)
@@ -272,22 +222,30 @@ public class API_WebServer implements Tool {
 		rootDir = GetArduinoRootDir();
 		System.out.println("rootDir="+rootDir);
 		try{
-			Field f ;
-			//Field f = Editor.class.getDeclaredField("sketch");
-			//f.setAccessible(true);
-			//sketch = (Sketch) f.get(this.editor);
 			sketch = this.editor.getSketch();
 			
+			base = (Base) ReflectGetField("base", this.editor);
+			pdeKeywords = base.getPdeKeywords(); // no need to use reflection here but using reflected base
+			keywordOldToken = (Map<String, String>) ReflectGetField("keywordOldToken", this.pdeKeywords);
+			editorConsole = (EditorConsole) ReflectGetField("console", this.editor);
+			console_stdOutStyle = (SimpleAttributeSet) ReflectGetField("stdOutStyle", this.editorConsole);
+			console_stdErrStyle = (SimpleAttributeSet) ReflectGetField("stdErrStyle", this.editorConsole);
+			tabs = (ArrayList<EditorTab>) ReflectGetField("tabs", this.editor);
+			header = (EditorHeader) ReflectGetField("header", this.editor);
+			runHandler = (Runnable) ReflectGetField("runHandler", this.editor);
+			presentHandler = (Runnable) ReflectGetField("presentHandler", this.editor);
+			toolsMenu = (JMenu) ReflectGetField("toolsMenu", this.editor);
+
+			/*
+			Field f ;
 			f = Editor.class.getDeclaredField("base");
 			f.setAccessible(true);
 			base = (Base) f.get(this.editor);
-			
-			pdeKeywords = base.getPdeKeywords(); // no need to use reflection here
-			
+
 			f = PdeKeywords.class.getDeclaredField("keywordOldToken");
 			f.setAccessible(true);
 			keywordOldToken = (Map<String, String>) f.get(pdeKeywords);
-			
+
 			f = Editor.class.getDeclaredField("console");
 			f.setAccessible(true);
 			editorConsole = (EditorConsole) f.get(this.editor);
@@ -304,7 +262,7 @@ public class API_WebServer implements Tool {
 			f.setAccessible(true);
 			tabs = (ArrayList<EditorTab>) f.get(this.editor);
 			
-			f = Editor.class.getDeclaredField("header");
+			f = this.editor.getClass().getDeclaredField("header");
 			f.setAccessible(true);
 			header = (EditorHeader) f.get(this.editor);
 			
@@ -319,6 +277,7 @@ public class API_WebServer implements Tool {
 			f = Editor.class.getDeclaredField("toolsMenu");
 			f.setAccessible(true);
 			toolsMenu = (JMenu) f.get(this.editor);
+			*/
 			
 			int thisToolIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
 			JMenu thisToolMenu = new JMenu(thisToolMenuTitle);		
@@ -367,7 +326,7 @@ public class API_WebServer implements Tool {
 			startWebServer();
 			startWebsocketServer();
 			SystemOutHookStart();
-			//setCurrentEditorConsole();
+			MyConsoleOutputStream.setCurrentEditorConsole(editorConsole, console_stdOutStyle, console_stdErrStyle, cs);
 		}
 		//ActivateAutoCompleteFunctionality();
 	}
@@ -539,7 +498,7 @@ public class API_WebServer implements Tool {
 			try { server.stop(1); } catch (Exception e) {System.err.println(e + " @ " + e.getStackTrace() + e.getStackTrace()[0].getLineNumber());}
 	  try {
 		server = HttpServer.create(new InetSocketAddress("localhost", serverPort), 0);
-		server.createContext("/", new  MyHttpHandler(editor, this));
+		server.createContext("/", new  MyHttpHandler(this));
 		server.setExecutor(null);
 		server.start();
 
@@ -835,7 +794,6 @@ public class API_WebServer implements Tool {
 	}
 	public synchronized String parsePOST(String data)
 	{
-		
 		String returnStr = "";
 		JSONObject jsonObj = new JSONObject(data);
 		Boolean removeOtherFiles = false;
@@ -852,44 +810,11 @@ public class API_WebServer implements Tool {
 		}
 		if (arrFiles != null)
 		{
-			for (int i = 0; i < arrFiles.length(); i++)
-			{
-				JSONObject file = arrFiles.getJSONObject(i);
-				String name = "";
-				String contents = "";
-				try { name = file.getString("name"); } catch (Exception e) { returnStr += " >>>error: fileObject don't contain name<<< ";if (debugPrint)e.printStackTrace(); continue; }
-				try { contents = file.getString("contents"); } catch (Exception e) { returnStr += " >>>error: fileObject don't contain contents<<< ";if (debugPrint)e.printStackTrace(); continue; }
-				
-				if (name.endsWith(".cpp") || name.endsWith(".c") || name.endsWith(".h") || name.endsWith(".hpp") || name.endsWith(".ino"))
-					addNewFile(name, contents); // adds a new file to the sketch-project
-				else
-					setFile(name, contents); // this writes a file without the IDE knowing it
-			}
+			returnStr += parsePOST_JSONfiles(arrFiles);
 		}
 		if (arrKeywords != null)
 		{
-			StringBuilder sbKeywords = new StringBuilder();
-			
-			for (int i = 0; i < arrKeywords.length(); i++)
-			{
-				JSONObject keyword = arrKeywords.getJSONObject(i);
-				String token = "";
-				String type = "";
-				try { token = keyword.getString("token"); } catch (Exception e) { returnStr += " >>>error: keyword don't contain token<<< ";if (debugPrint)e.printStackTrace(); continue; }
-				try { type = keyword.getString("type"); } catch (Exception e) { returnStr += " >>>error: keyword don't contain type<<< ";if (debugPrint)e.printStackTrace(); continue; }
-				
-				sbKeywords.append(token+"\t"+type+"\r\n");
-				keywordOldToken.put(token, type);
-				
-			}
-			
-			pdeKeywords_fillMissingTokenType();
-			editor.updateKeywords(pdeKeywords);
-			String sbKeywordsContents = sbKeywords.toString();
-			if (debugPrint)	System.out.println("setting new keywords:\n" + sbKeywordsContents);
-
-			if (!sbKeywordsContents.equals(""))
-				setFile(sketchKeywordsTempFileName, sbKeywordsContents);
+			returnStr += parsePOST_JSONkeywords(arrKeywords);
 		}
 		
 		if (debugPrint)	System.out.print(data + "\n");
@@ -898,440 +823,48 @@ public class API_WebServer implements Tool {
 		System.out.println(returnStr);
 		return returnStr;
 	}
-}
-class MyHttpHandler implements HttpHandler
-{    
-	Editor editor;
-	API_WebServer api;
-
-	public MyHttpHandler(Editor _editor, API_WebServer _api)
+	private String parsePOST_JSONfiles(JSONArray arrFiles)
 	{
-		this.editor = _editor;
-		this.api = _api;
-	}
-	
-	@Override    
-	public void handle(HttpExchange httpExchange) throws IOException {
-		httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-		
-		String reqMethod = httpExchange.getRequestMethod();
-		String htmlResponse = "";
-		String requestParamValue=null; 
-		
-		if(reqMethod.equals("GET"))
+		String returnStr = "";
+		for (int i = 0; i < arrFiles.length(); i++)
 		{
-			htmlResponse = api.parseGET(queryToMap(httpExchange.getRequestURI().getQuery()));
-		}
-		else if(reqMethod.equals("POST"))
-		{ 
-			requestParamValue = handlePostRequest(httpExchange);
-			if (requestParamValue.length() == 0)
-			{
-				System.out.println("HTTP POST don't contain any data!");
-				htmlResponse = "";
-			}
+			JSONObject file = arrFiles.getJSONObject(i);
+			String name = "";
+			String contents = "";
+			try { name = file.getString("name"); } catch (Exception e) { returnStr += " >>>error: fileObject don't contain name<<< ";if (debugPrint)e.printStackTrace(); continue; }
+			try { contents = file.getString("contents"); } catch (Exception e) { returnStr += " >>>error: fileObject don't contain contents<<< ";if (debugPrint)e.printStackTrace(); continue; }
+			
+			if (name.endsWith(".cpp") || name.endsWith(".c") || name.endsWith(".h") || name.endsWith(".hpp") || name.endsWith(".ino"))
+				addNewFile(name, contents); // adds a new file to the sketch-project
 			else
-			{
-				htmlResponse = api.parsePOST(requestParamValue);
-			}
+				setFile(name, contents); // this writes a file without the IDE knowing it
 		}
-		else
-		{
-			System.out.println("unknown reqMethod:" + reqMethod);
-			htmlResponse = "unknown reqMethod:" + reqMethod;
-		}
-		//System.out.println(requestParamValue); // debug
-		handleResponse(httpExchange, htmlResponse); 
+		return returnStr;
 	}
-
-	public Map<String, String> queryToMap(String query) {
-		Map<String, String> result = new HashMap<>();
-		for (String param : query.split("&")) {
-			String[] entry = param.split("=");
-			if (entry.length > 1) {
-				result.put(entry[0], entry[1]);
-			}else{
-				result.put(entry[0], "");
-			}
-		}
-		return result;
-	}
-	
-	private String handlePostRequest(HttpExchange httpExchange) {
-		if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
-            httpExchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, OPTIONS");
-            httpExchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type,Authorization");
-            try{
-			httpExchange.sendResponseHeaders(200, 0);
-			} catch (Exception e) {
-			e.printStackTrace();
-			}
-			System.out.println("hi");
-            return "";
-        }
-		InputStream input = httpExchange.getRequestBody();
-        StringBuilder stringBuilder = new StringBuilder();
-
-        new BufferedReader(new InputStreamReader(input))
-                          .lines()
-                          .forEach( (String s) -> stringBuilder.append(s + "\n") );
-
-		return stringBuilder.toString();
-	}
-
-	private void handleResponse(HttpExchange httpExchange, String htmlResponse)  throws  IOException {
-		OutputStream outputStream = httpExchange.getResponseBody();
-
-		// this line is a must
-		httpExchange.sendResponseHeaders(200, htmlResponse.length());
-		// additional data to send back
-		outputStream.write(htmlResponse.getBytes());
-		outputStream.flush();
-		outputStream.close();
-	}
-}
-class myWebSocketServer extends WebSocketServer {
-
-	public myWebSocketServer(int port) throws UnknownHostException {
-	  super(new InetSocketAddress(port));
-	}
-  
-	public myWebSocketServer(InetSocketAddress address) {
-	  super(address);
-	}
-  
-	public myWebSocketServer(int port, Draft_6455 draft) {
-	  super(new InetSocketAddress(port), Collections.<Draft>singletonList(draft));
-	}
-  
-	@Override
-	public void onOpen(WebSocket conn, ClientHandshake handshake) {
-	  conn.send("Welcome to the WebSocketServer!"); //This method sends a message to the new client
-	  broadcast("new connection: " + handshake
-		  .getResourceDescriptor()); //This method sends a message to all clients connected
-	  System.out.println(
-		  conn.getRemoteSocketAddress().getAddress().getHostAddress() + " connected!");
-	}
-  
-	@Override
-	public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-	  broadcast(conn + " disconnected!");
-	  System.out.println(conn + " disconnected!");
-	}
-  
-	@Override
-	public void onMessage(WebSocket conn, String message) {
-	  broadcast(message);
-	  System.out.println(conn + ": " + message);
-	}
-  
-	@Override
-	public void onMessage(WebSocket conn, ByteBuffer message) {
-	  broadcast(message.array());
-	  System.out.println(conn + ": " + message);
-	}
-  
-	@Override
-	public void onError(WebSocket conn, Exception ex) {
-	  ex.printStackTrace();
-	  if (conn != null) {
-		// some errors like port binding failed may not be assignable to a specific websocket
-	  }
-	}
-  
-	@Override
-	public void onStart() {
-	  System.out.println("Websocket Server started!");
-	  setConnectionLostTimeout(0);
-	  setConnectionLostTimeout(100);
-	}
-  
-  }
-  class ConsoleOutputStream2 extends ByteArrayOutputStream {
-
-	private SimpleAttributeSet attributes;
-	private final PrintStream printStream;
-	private final Timer timer;
-  
-	private volatile EditorConsole editorConsole;
-	private volatile boolean newLinePrinted;
-
-	private myWebSocketServer cs;
-	Color fgColor;
-	String fgColorHex;
-	Color bgColor;
-	String bgColorHex;
-  
-	public ConsoleOutputStream2(SimpleAttributeSet attributes, PrintStream printStream, myWebSocketServer cs) {
-	  this.cs = cs;
-	  this.attributes = attributes;
-	  this.printStream = printStream;
-	  this.newLinePrinted = false;
-	
-	  fgColor = StyleConstants.getForeground(attributes);
-	  fgColorHex = "#" + Integer.toHexString(fgColor.getRGB() | 0xFF000000).substring(2);
-	  bgColor = StyleConstants.getBackground(attributes);
-	  bgColorHex = "#" + Integer.toHexString(bgColor.getRGB() | 0xFF000000).substring(2);
-
-	  this.timer = new Timer(100, (e) -> {
-		if (editorConsole != null && newLinePrinted) {
-		  editorConsole.scrollDown();
-		  newLinePrinted = false;
-		}
-	  });
-	  timer.setRepeats(false);
-	}
-  
-	public void setAttibutes(SimpleAttributeSet attributes) {
-	  this.attributes = attributes;
-	}
-  
-	public void setCurrentEditorConsole(EditorConsole console) {
-	  this.editorConsole = console;
-	}
-  
-	public synchronized void flush() {
-	  String text = toString();
-  
-	  if (text.length() == 0) {
-		return;
-	  }
-  
-	  printStream.print(text);
-	  printInConsole(text);
-  
-	  reset();
-	}
-  
-	private void printInConsole(String text) {
-	  newLinePrinted = newLinePrinted || text.contains("\n");
-	  if (editorConsole != null) {
-		SwingUtilities.invokeLater(() -> {
-		  try { editorConsole.insertString(text, attributes); } 
-		  catch (BadLocationException ble) { /*ignore*/ }
-
-		  try { cs.broadcast("<span style=\"color:"+fgColorHex+";background-color:"+bgColorHex+";\">" + text.replace("\r\n", "<br>").replace("\r", "<br>").replace("\n", "<br>") + "</span>"); }
-		  catch (Exception ex) { /*ignore*/ }
-
-		});
-  
-		if (!timer.isRunning()) {
-		  timer.restart();
-		}
-	  }
-	}
-  }
-  class AutoCompleteProvider
-  {
-	public AutoCompletion ac;
-	String rootFolder = "";
-	String completeFile = "";
-
-	public AutoCompleteProvider(RSyntaxTextArea textArea, String rootFolder)
+	private String parsePOST_JSONkeywords(JSONArray arrKeywords)
 	{
-		CompletionProvider provider = createCompletionProvider(); // takes it all
-		
-		this.rootFolder = rootFolder;
-		completeFile = rootFolder + "\\c.xml";
-		System.out.println("@AutoCompleteProvider completeFile:" + completeFile);
-		// Install auto-completion onto our text area.
-		ac = new AutoCompletion(provider);
-		ac.setListCellRenderer(new CCellRenderer());
-		ac.setShowDescWindow(true);
-		ac.setParameterAssistanceEnabled(true);
-		ac.install(textArea);
-
-		textArea.setToolTipSupplier((ToolTipSupplier)provider);
-		ToolTipManager.sharedInstance().registerComponent(textArea);
-		System.out.println("AutoCompleteProvider is now installed");
-	}
-	  /**
-	 * Returns the provider to use when editing code.
-	 *
-	 * @return The provider.
-	 * @see #createCommentCompletionProvider()
-	 * @see #createStringCompletionProvider()
-	 */
-	public CompletionProvider createCodeCompletionProvider() {
-
-		// Add completions for the C standard library.
-		DefaultCompletionProvider cp = new DefaultCompletionProvider();
-
-		// First try loading resource (running from demo jar), then try
-		// accessing file (debugging in Eclipse).
-		ClassLoader cl = getClass().getClassLoader();
-		InputStream in = cl.getResourceAsStream(completeFile);
-		try {
-			if (in!=null) {
-				cp.loadFromXML(in);
-				in.close();
-			}
-			else {
-				File file = new File(completeFile);
-				if (file.exists())
-				{
-					System.out.println("*******************File exists***************");
-					cp.loadFromXML(file);
-				}
-			}
-		} catch (IOException ioe) {
-			ioe.printStackTrace();
+		StringBuilder sbKeywords = new StringBuilder();
+		String returnStr = "";
+		for (int i = 0; i < arrKeywords.length(); i++)
+		{
+			JSONObject keyword = arrKeywords.getJSONObject(i);
+			String token = "";
+			String type = "";
+			try { token = keyword.getString("token"); } catch (Exception e) { returnStr += " >>>error: keyword don't contain token<<< ";if (debugPrint)e.printStackTrace(); continue; }
+			try { type = keyword.getString("type"); } catch (Exception e) { returnStr += " >>>error: keyword don't contain type<<< ";if (debugPrint)e.printStackTrace(); continue; }
+			
+			sbKeywords.append(token+"\t"+type+"\r\n");
+			keywordOldToken.put(token, type);
+			
 		}
+		
+		pdeKeywords_fillMissingTokenType();
+		editor.updateKeywords(pdeKeywords);
+		String sbKeywordsContents = sbKeywords.toString();
+		if (debugPrint)	System.out.println("setting new keywords:\n" + sbKeywordsContents);
 
-		// Add some handy shorthand completions.
-		cp.addCompletion(new ShorthandCompletion(cp, "main",
-							"int main(int argc, char **argv)"));
-
-		// Add a parameterized completion with a ton of parameters (see #67)
-		FunctionCompletion functionCompletionWithLotsOfParameters = new FunctionCompletion(cp, "long", "int");
-		functionCompletionWithLotsOfParameters.setParams(Arrays.asList(
-			new ParameterizedCompletion.Parameter("int", "intVal"),
-			new ParameterizedCompletion.Parameter("float", "floatVal"),
-			new ParameterizedCompletion.Parameter("string", "stringVal"),
-			new ParameterizedCompletion.Parameter("int", "otherVal1"),
-			new ParameterizedCompletion.Parameter("int", "otherVal2"),
-			new ParameterizedCompletion.Parameter("int", "otherVal3"),
-			new ParameterizedCompletion.Parameter("int", "otherVal4"),
-			new ParameterizedCompletion.Parameter("int", "otherVal5"),
-			new ParameterizedCompletion.Parameter("int", "otherVal6"),
-			new ParameterizedCompletion.Parameter("int", "otherVal7"),
-			new ParameterizedCompletion.Parameter("int", "otherVal8"),
-			new ParameterizedCompletion.Parameter("int", "otherVal9"),
-			new ParameterizedCompletion.Parameter("int", "otherVal9"),
-			new ParameterizedCompletion.Parameter("int", "otherVal10"),
-			new ParameterizedCompletion.Parameter("int", "otherVal11"),
-			new ParameterizedCompletion.Parameter("int", "otherVal12"),
-			new ParameterizedCompletion.Parameter("int", "otherVal13"),
-			new ParameterizedCompletion.Parameter("int", "otherVal14"),
-			new ParameterizedCompletion.Parameter("int", "otherVal15"),
-			new ParameterizedCompletion.Parameter("int", "otherVal16"),
-			new ParameterizedCompletion.Parameter("int", "otherVal17"),
-			new ParameterizedCompletion.Parameter("int", "otherVal18"),
-			new ParameterizedCompletion.Parameter("int", "otherVal19"),
-			new ParameterizedCompletion.Parameter("int", "otherVal20")
-		));
-		cp.addCompletion(functionCompletionWithLotsOfParameters);
-		return cp;
-
+		if (!sbKeywordsContents.equals(""))
+			setFile(sketchKeywordsTempFileName, sbKeywordsContents);
+		return returnStr;
 	}
-
-
-	/**
-	 * Returns the provider to use when in a comment.
-	 *
-	 * @return The provider.
-	 * @see #createCodeCompletionProvider()
-	 * @see #createStringCompletionProvider()
-	 */
-	public CompletionProvider createCommentCompletionProvider() {
-		DefaultCompletionProvider cp = new DefaultCompletionProvider();
-		cp.addCompletion(new BasicCompletion(cp, "TODO:", "A to-do reminder"));
-		cp.addCompletion(new BasicCompletion(cp, "FIXME:", "A bug that needs to be fixed"));
-		return cp;
-	}
-
-	/**
-	 * Returns the completion provider to use when the caret is in a string.
-	 *
-	 * @return The provider.
-	 * @see #createCodeCompletionProvider()
-	 * @see #createCommentCompletionProvider()
-	 */
-	private CompletionProvider createStringCompletionProvider() {
-		DefaultCompletionProvider cp = new DefaultCompletionProvider();
-		cp.addCompletion(new BasicCompletion(cp, "%c", "char", "Prints a character"));
-		cp.addCompletion(new BasicCompletion(cp, "%i", "signed int", "Prints a signed integer"));
-		cp.addCompletion(new BasicCompletion(cp, "%f", "float", "Prints a float"));
-		cp.addCompletion(new BasicCompletion(cp, "%s", "string", "Prints a string"));
-		cp.addCompletion(new BasicCompletion(cp, "%u", "unsigned int", "Prints an unsigned integer"));
-		cp.addCompletion(new BasicCompletion(cp, "\\n", "Newline", "Prints a newline"));
-		return cp;
-	}
-
-
-	/**
-	 * Creates the completion provider for a C editor.  This provider can be
-	 * shared among multiple editors.
-	 *
-	 * @return The provider.
-	 */
-	public CompletionProvider createCompletionProvider() {
-
-		// Create the provider used when typing code.
-		CompletionProvider codeCP = createCodeCompletionProvider();
-
-		// The provider used when typing a string.
-		CompletionProvider stringCP = createStringCompletionProvider();
-
-		// The provider used when typing a comment.
-		CompletionProvider commentCP = createCommentCompletionProvider();
-
-		// Create the "parent" completion provider.
-		LanguageAwareCompletionProvider provider = new
-								LanguageAwareCompletionProvider(codeCP);
-		provider.setStringCompletionProvider(stringCP);
-		provider.setCommentCompletionProvider(commentCP);
-
-		return provider;
-
-	}
-  }
-  /**
- * The cell renderer used for the C programming language.
- *
- * @author Robert Futrell
- * @version 1.0
- */
-class CCellRenderer extends CompletionCellRenderer {
-
-	private Icon variableIcon;
-	private Icon functionIcon;
-
-
-	/**
-	 * Constructor.
-	 */
-	CCellRenderer() {
-		variableIcon = getIcon("img/var.png");
-		functionIcon = getIcon("img/function.png");
-	}
-
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void prepareForOtherCompletion(JList list,
-			Completion c, int index, boolean selected, boolean hasFocus) {
-		super.prepareForOtherCompletion(list, c, index, selected, hasFocus);
-		setIcon(getEmptyIcon());
-	}
-
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void prepareForVariableCompletion(JList list,
-			VariableCompletion vc, int index, boolean selected,
-			boolean hasFocus) {
-		super.prepareForVariableCompletion(list, vc, index, selected,
-										hasFocus);
-		setIcon(variableIcon);
-	}
-
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void prepareForFunctionCompletion(JList list,
-			FunctionCompletion fc, int index, boolean selected,
-			boolean hasFocus) {
-		super.prepareForFunctionCompletion(list, fc, index, selected,
-										hasFocus);
-		setIcon(functionIcon);
-	}
-
-
 }
