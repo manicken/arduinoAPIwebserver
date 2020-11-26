@@ -213,6 +213,8 @@ public class API_WebServer implements Tool {
 	}
 	private void init()
 	{
+		System.out.println("BaseNoGui.getToolsFolder()=" + BaseNoGui.getToolsFolder());
+		System.out.println("BaseNoGui.getSketchbookFolder()=" + BaseNoGui.getSketchbookFolder());
 		if (started)
 		{
 			System.out.println("Server is allready running at port " + serverPort);
