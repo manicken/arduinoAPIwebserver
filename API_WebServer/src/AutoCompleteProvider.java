@@ -62,15 +62,15 @@ public class AutoCompleteProvider
 			if (in!=null) {
 				cp.loadFromXML(in);
 				in.close();
-				System.out.println("*******************File exists1***************");
+				//System.out.println("*******************File exists1***************");
 			}
 			else {
 				
 				File file = new File(rootFolder, "c.xml");
-				System.out.println("@AutoCompleteProvider completeFile:" + file.getAbsolutePath());
+				//System.out.println("@AutoCompleteProvider completeFile:" + file.getAbsolutePath());
 				if (file.exists())
 				{
-					System.out.println("*******************File exists2***************");
+					//System.out.println("*******************File exists2***************");
 					cp.loadFromXML(file);
 				}
 			}
