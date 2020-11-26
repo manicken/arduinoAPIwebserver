@@ -14,6 +14,8 @@ This extension make it possible to take control of Arduino IDE from a Web Page b
 &nbsp;&nbsp;called tools<br>
 &nbsp;&nbsp;then copy the API_WebServer from the repository into this new "tools" folder.<br>
 
+### Alternative install
+
 * on windows / linux (into Arduino IDE install dir):<br>
 &nbsp;&nbsp;copy folder API_WebServer to [Arduino IDE install location]/tools directory<br>
 &nbsp;&nbsp;ex: /Arduino-1.8.13/tools<br>
