@@ -3,6 +3,7 @@ package com.manicken;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.function.Consumer;
 import java.net.InetSocketAddress;
 
 import org.java_websocket.WebSocket;
@@ -13,8 +14,16 @@ import org.java_websocket.server.WebSocketServer;
 
 public class MyWebSocketServer extends WebSocketServer {
 
+	Consumer<String> onMessageHandler;
+
 	public MyWebSocketServer(int port) throws UnknownHostException {
+		super(new InetSocketAddress(port));
+		
+	  }
+
+	public MyWebSocketServer(int port, Consumer<String> _onMessageHandler) throws UnknownHostException {
 	  super(new InetSocketAddress(port));
+	  this.onMessageHandler = _onMessageHandler;
 	}
   
 	public MyWebSocketServer(InetSocketAddress address) {
@@ -53,14 +62,19 @@ public class MyWebSocketServer extends WebSocketServer {
   
 	@Override
 	public void onMessage(WebSocket conn, String message) {
-	  broadcast(message);
-	  System.out.println(conn + ": " + message);
+	  //broadcast(message);
+	  
+	  if (onMessageHandler != null)
+	  	onMessageHandler.accept(message);
+	  else
+	  	System.out.println(conn + ": " + message);
 	}
   
 	@Override
 	public void onMessage(WebSocket conn, ByteBuffer message) {
-	  broadcast(message.array());
+	  //broadcast(message.array());
 	  System.out.println(conn + ": " + message);
+	  //onMessageHandler(message);
 	}
   
 	@Override

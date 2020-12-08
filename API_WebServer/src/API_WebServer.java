@@ -4,7 +4,7 @@
   Part of the Processing project - http://processing.org
 
   Copyright (c) 2008 Ben Fry and Casey Reas
-  Copyright (c) 2020 Jannik Leif Simon Svensson (1984)- Sweden
+  Copyright (c) 2020 Jannik LS Svensson (1984)- Sweden
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -25,48 +25,28 @@ package com.manicken;
 
 import java.io.IOException;
 import java.io.File;
-import java.io.PrintStream;
 import java.io.FileWriter;
 import java.io.StringWriter;
 
-import java.net.URI;
 import java.net.InetSocketAddress;
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.prefs.Preferences;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
-
 import java.awt.Desktop;
-import java.awt.Color;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-import java.nio.file.Path;
-
 import com.sun.net.httpserver.HttpServer;
 
-import processing.app.Base;
 import processing.app.BaseNoGui;
 import processing.app.Editor;
 import processing.app.tools.Tool;
-import processing.app.Sketch;
-import processing.app.EditorTab;
-import processing.app.syntax.SketchTextArea;
-import processing.app.SketchFile;
-import processing.app.EditorHeader;
-import processing.app.EditorConsole;
-import processing.app.syntax.PdeKeywords;
-import static processing.app.I18n.tr;
+import processing.app.PreferencesData;
 
 import org.json.*;
 
@@ -75,97 +55,50 @@ import com.manicken.ConfigDialog;
 import com.manicken.MyConsoleOutputStream;
 import com.manicken.MyWebSocketServer;
 import com.manicken.MyHttpHandler;
+import com.manicken.Reflect;
+import com.manicken.CustomMenu;
+import com.manicken.IDEhelper;
 
 /**
  * Example Tools menu entry.
  */
 public class API_WebServer implements Tool {
 	boolean debugPrint = false;
+	boolean useSeparateExtensionsMainMenu = true;
 
-	Base base;// for the API uses reflection to get
-	Editor editor;// for the API
-	Sketch sketch; // for the API
-	ArrayList<EditorTab> tabs; // for the API uses reflection to get
-	EditorHeader header; // for the API uses reflection to get
-	Runnable runHandler; // for the API uses reflection to get
-	Runnable presentHandler; // for the API uses reflection to get
+	ConfigDialog cd = null;
 
-	PdeKeywords pdeKeywords; // for the API uses reflection to get
-	Map<String, String> keywordOldToken; // for the API uses reflection to get
-	String sketchKeywordsFileName = "keywords.txt";
-	String sketchKeywordsTempFileName = "keywords_temp.txt"; // updated by external editor
-	
-	JMenu toolsMenu; // for the API uses reflection to get
-	
+	Editor editor;
+
+	CustomMenu cm;
+	IDEhelper ideh;
+	MidiHelper midi;
+
 	HttpServer server;
+	MyWebSocketServer mwss; // this is used for bi directional data
 	
-	int DefaultServerPort = 8080;
-	boolean DefaultAutoStart = true;
 	String thisToolMenuTitle = "API Web Server";
-	String rootDir;
-	
-	int serverPort = 8080; // replaced by code down
+
+	int webServerPort = 8080; // replaced by code down
+	int terminalCaptureWebSocketServerPort = 3000;
+	int biDirDataWebSocketServerPort = 3001;
 	boolean autostart = true; // replaced by code down
 	
 	boolean started = false;
-	public MyWebSocketServer cs;
-
-	EditorConsole editorConsole;
 	
-	private SimpleAttributeSet console_stdOutStyle;
-	private SimpleAttributeSet console_stdErrStyle;
-	String outFgColorHex;
-	String outBgColorHex;
-	String errFgColorHex;
-	String errBgColorHex;
+	public String getMenuTitle() {// required by tool loader
+		return thisToolMenuTitle;
+	}
 
 	public void init(Editor editor) { // required by tool loader
 		this.editor = editor;
 
 		editor.addWindowListener(new WindowAdapter() {
-			public void windowOpened(WindowEvent e) {
-			  init();
-			}
+			public void windowOpened(WindowEvent e) { init(); }
 		});
-		
 	}
 
-	private void SystemOutHookStart() {
-		Color fgColor = StyleConstants.getForeground(console_stdOutStyle);
-		outFgColorHex = "#" + Integer.toHexString(fgColor.getRGB() | 0xFF000000).substring(2);
-		Color bgColor = StyleConstants.getBackground(console_stdOutStyle);
-		outBgColorHex = "#" + Integer.toHexString(bgColor.getRGB() | 0xFF000000).substring(2);
-
-		fgColor = StyleConstants.getForeground(console_stdErrStyle);
-		errFgColorHex = "#" + Integer.toHexString(fgColor.getRGB() | 0xFF000000).substring(2);
-		bgColor = StyleConstants.getBackground(console_stdErrStyle);
-		errBgColorHex = "#" + Integer.toHexString(bgColor.getRGB() | 0xFF000000).substring(2);
-
-		PrintStream psOut = new PrintStream(System.out, true) {
-			@Override
-			public void println(String x) {
-				cs_SendWithStyle(outFgColorHex, outBgColorHex, x + "<br>");
-				super.println(x);
-			}
-		};
-		System.setOut(psOut);
-
-		PrintStream psErr = new PrintStream(System.out, true) {
-			@Override
-			public void println(String x) {
-				cs_SendWithStyle(errFgColorHex, errBgColorHex, x + "<br>");
-				super.println(x);
-			}
-		};
-		System.setErr(psErr);
-	}
-
-	private void cs_SendWithStyle(String fgColorHex, String bgColorHex, String text) {
-		if (cs == null) return;
-		cs.SendWithHtmlStyle(fgColorHex, bgColorHex, text);
-	}
-
-	public void run() {// required by tool loader
+	public void run() { // required by tool loader
 		LoadSettings();
 		startWebServer();
 		startWebsocketServer();		
@@ -173,8 +106,42 @@ public class API_WebServer implements Tool {
 
 	public void startWebsocketServer() {
 		try {
-			cs = new MyWebSocketServer(3000);
-			cs.start();
+			mwss = new MyWebSocketServer(biDirDataWebSocketServerPort, (String message) -> {
+				message = message.toLowerCase();
+				if (message.startsWith("midisend"))
+				{
+					int beginIndex = message.indexOf("(");
+					if (beginIndex == -1) { mwss.broadcast("midi send missing first ("); return; }
+					int endIndex = message.indexOf(")");
+					if (endIndex == -1) { mwss.broadcast("midi send missing last )"); return; }
+
+					message = message.substring(beginIndex+1, endIndex);
+					System.out.println("midisend " + message);
+					String[] params = message.split(",");
+					if (params.length != 3) {mwss.broadcast("midi send params.length != 3"); return;}
+					int[] intParams = new int[params.length];
+					for (int i = 0; i < 3; i++)
+					{
+						params[i] = params[i].trim();
+						if (params[i].startsWith("0x"))
+						{
+							params[i] = params[i].substring(2);
+							intParams[i] = Integer.parseInt(params[i], 16);
+						}
+						else
+						{
+							intParams[i] = Integer.parseInt(params[i]);
+						}
+						//System.out.println("midisend byte" + i + ":" + intParams[i]);
+					}
+					midi.Send(intParams);
+					
+				}
+				else
+					System.out.println("biDirDataWebSocketServerData unknown command: " + message);
+			}
+			);
+			mwss.start();
 		} catch (Exception e) { System.err.println("cannot start websocket server!!!"); e.printStackTrace(); }
 	}
 
@@ -182,442 +149,123 @@ public class API_WebServer implements Tool {
 		if (server != null)
 			try { server.stop(1); } catch (Exception e) {System.err.println(e + " @ " + e.getStackTrace() + e.getStackTrace()[0].getLineNumber());}
 		try {
-			server = HttpServer.create(new InetSocketAddress("localhost", serverPort), 0);
+			server = HttpServer.create(new InetSocketAddress("localhost", webServerPort), 0);
 			server.createContext("/", new  MyHttpHandler(this));
 			server.setExecutor(null);
 			server.start();
 
-			System.out.println(" Server started on port " + serverPort);
+			System.out.println(" Server started on port " + webServerPort);
 		} catch (Exception e) { System.err.println("cannot start web server!!!"); e.printStackTrace(); }
 	}
 
-	public String getMenuTitle() {// required by tool loader
-		return thisToolMenuTitle;
-	}
-
-	private Object ReflectGetField(String name, Object src) {
-		try {
-			Field f = src.getClass().getDeclaredField(name);
-			f.setAccessible(true);
-			return f.get(src);
-
-		} catch (Exception e) {
-			System.err.println("****************************************");
-			System.err.println("************cannot reflect**************");
-			System.err.println("****************************************");
-			e.printStackTrace();
-			return null;
-		}
-	}
-
 	private void init() {
-		System.out.println("BaseNoGui.getToolsFolder()=" + BaseNoGui.getToolsFolder());
-		System.out.println("BaseNoGui.getSketchbookFolder()=" + BaseNoGui.getSketchbookFolder());
+		//System.out.println("BaseNoGui.getToolsFolder()=" + BaseNoGui.getToolsFolder());
+		//System.out.println("BaseNoGui.getSketchbookFolder()=" + BaseNoGui.getSketchbookFolder());
 		if (started) {
-			System.out.println("Server is allready running at port " + serverPort);
+			System.out.println("Server is allready running at port " + webServerPort);
 			return;
 		}
-		System.out.println("init API_WebServer");
-		rootDir = GetArduinoRootDir();
-		System.out.println("rootDir="+rootDir);
+		System.out.println("startin API_WebServer ...");
 		try{
-			sketch = this.editor.getSketch();
-			
-			base = (Base) ReflectGetField("base", this.editor);
-			pdeKeywords = base.getPdeKeywords(); // no need to use reflection here but using reflected base
-			keywordOldToken = (Map<String, String>) ReflectGetField("keywordOldToken", this.pdeKeywords);
-			editorConsole = (EditorConsole) ReflectGetField("console", this.editor);
-			console_stdOutStyle = (SimpleAttributeSet) ReflectGetField("stdOutStyle", this.editorConsole);
-			console_stdErrStyle = (SimpleAttributeSet) ReflectGetField("stdErrStyle", this.editorConsole);
-			tabs = (ArrayList<EditorTab>) ReflectGetField("tabs", this.editor);
-			header = (EditorHeader) ReflectGetField("header", this.editor);
-			runHandler = (Runnable) ReflectGetField("runHandler", this.editor);
-			presentHandler = (Runnable) ReflectGetField("presentHandler", this.editor);
-			toolsMenu = (JMenu) ReflectGetField("toolsMenu", this.editor);
-
-			int thisToolIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
-			JMenu thisToolMenu = new JMenu(thisToolMenuTitle);		
-			toolsMenu.insert(thisToolMenu, thisToolIndex+1);
-			toolsMenu.remove(thisToolIndex);
-			
-			JMenuItem newItem = new JMenuItem("Start/Restart Server");
-			thisToolMenu.add(newItem);
-			newItem.addActionListener(event -> run());
-			
-			newItem = new JMenuItem("Settings");
-			thisToolMenu.add(newItem);
-			newItem.addActionListener(event -> ShowConfigDialog());
-
-			newItem = new JMenuItem("Start GUI Tool");
-			thisToolMenu.add(newItem);
-			newItem.addActionListener(event -> StartGUItool());
-
-			newItem = new JMenuItem("Init autocomplete");
-			thisToolMenu.add(newItem);
-			newItem.addActionListener(event -> ActivateAutoCompleteFunctionality());
+			ideh = new IDEhelper(editor);
+			midi = new MidiHelper();
+			System.out.println("rootDir="+ ideh.GetArduinoRootDir());
+			cm = new CustomMenu(editor, thisToolMenuTitle, 
+				new JMenuItem[] {
+					CustomMenu.Item("Start/Restart Server", event -> run()),
+					CustomMenu.Item("Settings", event -> ShowConfigDialog()),
+					CustomMenu.Item("Start GUI Tool", event -> StartGUItool()),
+					CustomMenu.Item("Init autocomplete", event -> ideh.ActivateAutoCompleteFunctionality())
+				});
+			cm.Init(useSeparateExtensionsMainMenu);
 
 			started = true;
 			
-			loadSketchKeywordsFile();
-			loadSketchKeywordsTempFile(); // used by the external tool/editor
-
-			//keywordOldToken.put("Jannik", "KEYWORD2");
-			//keywordOldToken.put("Svensson", "LITERAL1");
-			//keywordOldToken.put("Jannik", "LITERAL1");
-			//pdeKeywords_fillMissingTokenType(); // only needed after new keywords is added "manually"
-			editor.updateKeywords(pdeKeywords); // this applys the changes
+			ideh.InitCustomKeywords();
+			LoadSettings();
 			
 		} catch (Exception e) {
-			sketch = null;
-			tabs = null;
+			
 			System.err.println("cannot reflect:");
 			e.printStackTrace();
 			System.err.println("API_WebServer not started!!!");
 			return;
 		}
-		LoadSettings();
+		
 		if (autostart) {
 			startWebServer();
 			startWebsocketServer();
-			SystemOutHookStart();
-			MyConsoleOutputStream.setCurrentEditorConsole(editorConsole, console_stdOutStyle, console_stdErrStyle, cs);
+			ideh.SystemOutHookStart(terminalCaptureWebSocketServerPort);
+			//if (mwss != null)
+			//	MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole, ideh.console_stdOutStyle, ideh.console_stdErrStyle, mwss);
 		}
 		//ActivateAutoCompleteFunctionality();
 	}
 
-	public void ActivateAutoCompleteFunctionality() {
-		for (int i = 0; i < tabs.size(); i++) {
-			SketchTextArea textArea = tabs.get(i).getTextArea();
-			AutoCompleteProvider acp = new AutoCompleteProvider(textArea, GetJarFileDir());
-		}
-	}
-
-	public void pdeKeywords_fillMissingTokenType() {
-		try {
-			Method m = PdeKeywords.class.getDeclaredMethod("fillMissingTokenType");
-			m.setAccessible(true);
-			m.invoke(pdeKeywords);
-		} catch (Exception e) { System.err.println("cannot invoke editor_addTab"); e.printStackTrace(); }
-	}
-
-	public void pdeKeywords_parseKeywordsTxt(File file) {
-		try {
-			Method m = PdeKeywords.class.getDeclaredMethod("parseKeywordsTxt", File.class);
-			m.setAccessible(true);
-			m.invoke(pdeKeywords, file);
-		}
-		catch (Exception e) { System.err.println("cannot invoke editor_addTab"); e.printStackTrace(); }
-	}
-
-	public void loadSketchKeywordsFile() {
-		File file = new File(sketch.getFolder(), sketchKeywordsFileName);
-		if (!file.exists()) return;
-		pdeKeywords_parseKeywordsTxt(file);
-	}
-
-	public void loadSketchKeywordsTempFile() {
-		File file = new File(sketch.getFolder(), sketchKeywordsTempFileName);
-		if (!file.exists()) return;
-		pdeKeywords_parseKeywordsTxt(file);
-	}
-	
 	public void StartGUItool() {
 		try {
-			File htmlFile = new File(rootDir + "/hardware/teensy/avr/libraries/Audio/gui/index.html");
+			File htmlFile = new File(ideh.GetArduinoRootDir() + "/hardware/teensy/avr/libraries/Audio/gui/index.html");
 			Desktop.getDesktop().browse(htmlFile.toURI());
 			System.out.println("Web page opened in browser");
 		} catch (Exception e) {  e.printStackTrace(); }
 	}
 
+	private void refreshMidiDevices()
+	{
+		//cd.lstMidiDevices.clear();
+		cd.lstMidiDevices.setListData(midi.GetDeviceList());
+	}
 	public void ShowConfigDialog() {
-		ConfigDialog cd = new ConfigDialog();
-		//cd.setPreferredSize(new Dimension(100, 100)); // set in ConfigDialog code
-		cd.txtServerport.setText(Integer.toString(serverPort));
+		if (cd == null)
+		{
+			cd = new ConfigDialog();
+			cd.btnRefreshMidiDevices.addActionListener(new java.awt.event.ActionListener() { 
+				public void actionPerformed(java.awt.event.ActionEvent e) { 
+				    refreshMidiDevices();
+				} 
+			});
+		}
+
+		cd.txtWebServerPort.setText(Integer.toString(webServerPort));
+		cd.txtTermCapWebSocketServerPort.setText(Integer.toString(terminalCaptureWebSocketServerPort));
+		cd.txtBiDirDataWebSocketServerPort.setText(Integer.toString(biDirDataWebSocketServerPort));
 		cd.chkAutostart.setSelected(autostart);
+		cd.chkDebugMode.setSelected(debugPrint);
+		
 		
 	   int result = JOptionPane.showConfirmDialog(editor, cd, "API Web Server Config" ,JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			
 		if (result == JOptionPane.OK_OPTION) {
-			serverPort = Integer.parseInt(cd.txtServerport.getText());
+			webServerPort = Integer.parseInt(cd.txtWebServerPort.getText());
+			terminalCaptureWebSocketServerPort = Integer.parseInt(cd.txtTermCapWebSocketServerPort.getText());
+			biDirDataWebSocketServerPort = Integer.parseInt(cd.txtBiDirDataWebSocketServerPort.getText());
 			autostart = cd.chkAutostart.isSelected();
 			debugPrint = cd.chkDebugMode.isSelected();
-			System.out.println(serverPort + " " + autostart);
+			midi.selectedDeviceIndex = cd.lstMidiDevices.getSelectedIndex();
+			if (midi.OpenDevice())
+			{
+				System.out.println("hurray");
+			}
 			SaveSettings();
 		} else { System.out.println("Cancelled"); }
 	}
-
-	public int GetMenuItemIndex(JMenu menu, String name) {
-		//System.out.println("try get menu: " + name);
-		for ( int i = 0; i < menu.getItemCount(); i++) {
-			//System.out.println("try get menu item @ " + i);
-			JMenuItem item = menu.getItem(i);
-			if (item == null) continue; // happens on seperators
-			if (item.getText() == name)
-				return i;
-		}
-		return -1;
-	}
-
-	public String GetArduinoRootDir() {
-		try {
-			File file = BaseNoGui.getToolsFolder();//new File(API_WebServer.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-			return file.getParentFile().getAbsolutePath();//.getParentFile().getParentFile().getParent();
-		} catch (Exception e) { e.printStackTrace(); return ""; }
-	}
-
-	public String GetJarFileDir() {
-		try {
-			File file = new File(API_WebServer.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-			return file.getParent();
-		}catch (Exception e) { e.printStackTrace(); return ""; }
-	}
-	
-	public void LoadDefaultSettings() {
-		serverPort = DefaultServerPort;
-		autostart = DefaultAutoStart;
-		System.out.println("Default Settings Used, serverPort=" + serverPort + ", autostart=" + autostart);
-	}
-	
-	public File GetSettingsFile() {
-		File file = new File(GetJarFileDir() + "/settings.json"); // works on linux and windows
-		if (file.exists()) return file;
-		System.out.println("setting file not found!");
-		return null;
-	}
-	
-	public void LoadSettings() {
-		File file = GetSettingsFile();
-		if (file == null) { LoadDefaultSettings(); return;}
-		
-		String content = "";
-		try { content = new Scanner(file).useDelimiter("\\Z").next(); } 
-		catch (Exception e) {e.printStackTrace(); LoadDefaultSettings(); return; }
-		JSONObject jsonObj = new JSONObject(content);
-			
-		try {serverPort = jsonObj.getInt("serverPort");} 
-		catch (Exception e) { e.printStackTrace(); serverPort = DefaultServerPort; System.out.println("Default used for serverPort=" + serverPort);}
-		
-		try {autostart = jsonObj.getBoolean("autostart");}
-		catch (Exception e) { e.printStackTrace(); autostart = DefaultAutoStart; System.out.println("Default used for autostart=" + autostart);}
-	}
-	
-	public void SaveSettings() {
-		try {
-            // Constructs a FileWriter given a file name, using the platform's default charset
-            FileWriter file = new FileWriter(GetJarFileDir() + "/settings.json");
-            StringWriter stringWriter = new StringWriter();
-			JSONWriter writer = new JSONWriter(stringWriter);
-			writer.object().key("serverPort").value(serverPort).key("autostart").value(autostart).endObject();
-
-			System.out.println(stringWriter.getBuffer().toString());
-			file.write(stringWriter.getBuffer().toString());
-
-			file.close();
-        } catch (IOException e) {  e.printStackTrace(); }
-	}
-
-	public String getFile(String name) {
-		File file = new File(sketch.getFolder(), name);
-		boolean exists = file.exists();
-		if (exists) {
-			
-			try {
-				String content = new Scanner(file).useDelimiter("\\Z").next();
-				return content;
-			} catch (Exception e) { e.printStackTrace(); return ""; }
-		}
-		else {
-			System.out.println(name + " file not found!");
-			return "";
-		}
-	}
-
-	public void setFile(String name, String contents) {
-		try {
-            // Constructs a FileWriter given a file name, using the platform's default charset
-            FileWriter file = new FileWriter(sketch.getFolder() + "/" + name);
-			file.write(contents);
-			file.close();
-        } catch (IOException e) { e.printStackTrace(); }
-	}
-	
-	public void RemoveFilesNotInJSON(JSONArray arr) {
-		try {
-			System.out.println("RemoveFilesNotInJSON");
-			ArrayList<String> filesToRemove = new ArrayList<String>();
-			
-			// this removes files in the sketch that is not present in the 
-			// JSONArray. To not interfere with the current sketch.getCodeCount()
-			// it stores filenames to be removed in a temporary Array
-			for (int i = 0; i < sketch.getCodeCount(); i++) {
-				SketchFile sf = sketch.getFile(i);
-				if (sf.isPrimary()) continue; // never remove primary sketch ino file
-				
-				String fileName = sf.getFileName();
-				if (!CheckIfFileExistsInJsonArray(fileName, arr))
-					filesToRemove.add(fileName); // store it for later
-			}
-			// now it can remove files 
-			for (int i = 0; i < filesToRemove.size(); i++) {
-				String fileName = filesToRemove.get(i);
-				System.out.println("Removing file:" + fileName);
-				removeFile(fileName);
-			}
-		} catch (Exception e) { e.printStackTrace(); }
-	}
-
-	private boolean CheckIfFileExistsInJsonArray(String fileName, JSONArray arr) {
-		//System.out.println("CheckIfFileExistsInJsonArray:" + fileName);
-		for (int i = 0; i < arr.length(); i++) {
-			JSONObject e = arr.getJSONObject(i);
-			String name = e.getString("name");
-			//System.out.println("against: " + name);
-			if (name.equals(fileName))
-				return true;
-		}
-		return false;
-	}
-
-	public Object ReflectInvokeMethod(String name, Object src, Object... parameters)
+	private void LoadSettings()
 	{
-		Class<?>[] parameterTypes = new Class<?>[parameters.length];
-		String debugInfo = "";
-		for (int i = 0; i < parameters.length; i++)
-		{
-			parameterTypes[i] = parameters[i].getClass();
-			debugInfo += parameterTypes[i].toString() + "\n";
-		}
-		try {
-			Method m = src.getClass().getDeclaredMethod(name, parameterTypes);
-			m.setAccessible(true);
-			return m.invoke(src, parameters);
-		}
-		catch (Exception e) { System.err.println("cannot invoke " + src.getClass().toString() + " " + name + "\n" + debugInfo); e.printStackTrace(); return null; }
+		webServerPort = PreferencesData.getInteger("manicken.apiWebServer.webServerPort", webServerPort);
+		terminalCaptureWebSocketServerPort = PreferencesData.getInteger("manicken.apiWebServer.terminalCaptureWebSocketServerPort", terminalCaptureWebSocketServerPort);
+		biDirDataWebSocketServerPort = PreferencesData.getInteger("manicken.apiWebServer.biDirDataWebSocketServerPort", biDirDataWebSocketServerPort);
+		autostart =	PreferencesData.getBoolean("manicken.apiWebServer.autostart", autostart);
+		debugPrint = PreferencesData.getBoolean("manicken.apiWebServer.debugPrint", debugPrint);
 	}
-
-	/*
-	 * this is for some special cases when the above don't work
-	 */
-	public Object ReflectInvokeMethod2(String name, Object src, Object[] parameters, Class<?>[] parameterTypes)
+	private void SaveSettings()
 	{
-		String debugInfo = "";
-		for (int i = 0; i < parameters.length; i++)
-			debugInfo += parameterTypes[i].toString() + "\n";
-		System.out.println(debugInfo);
-		try {
-			Method m = src.getClass().getDeclaredMethod(name, parameterTypes);
-			m.setAccessible(true);
-			return m.invoke(src, parameters);
-		}
-		catch (Exception e) { System.err.println("cannot invoke " + src.getClass().toString() + " " + name); e.printStackTrace(); return null; }
-	}
-	private <T> T[] asArr(T... params) { return params; } // a little helper when using above method
-	
-	public void editor_addTab(SketchFile sketchFile, String contents) {
-		try { ReflectInvokeMethod("addTab", editor, sketchFile, contents); }
-		catch (Exception e) { /*ReflectInvokeMethod allready prints errors*/ }
-	}
+		PreferencesData.setInteger("manicken.apiWebServer.webServerPort", webServerPort);
+		PreferencesData.setInteger("manicken.apiWebServer.terminalCaptureWebSocketServerPort", terminalCaptureWebSocketServerPort);
+		PreferencesData.setInteger("manicken.apiWebServer.biDirDataWebSocketServerPort", biDirDataWebSocketServerPort);
+		PreferencesData.setBoolean("manicken.apiWebServer.autostart", autostart);
+		PreferencesData.setBoolean("manicken.apiWebServer.debugPrint", debugPrint);
+	}	
 
-	public void sketch_removeFile(SketchFile sketchFile) {
-		try { ReflectInvokeMethod("removeFile", sketch, sketchFile);}
-		catch (Exception e) { /*ReflectInvokeMethod allready prints errors*/ }
-	}
-
-	public void editor_removeTab(SketchFile sketchFile) {
-		try { ReflectInvokeMethod("removeTab", editor, sketchFile); }
-		catch (Exception e) { /*ReflectInvokeMethod allready prints errors*/ }
-	}
-
-	public boolean sketchFile_delete(SketchFile sketchFile) {
-		try { return (boolean)ReflectInvokeMethod2("delete", sketchFile, asArr(sketch.getBuildPath().toPath()), asArr(Path.class)); } // without asArr >> new Object[]{path}, new Class<?>[]{Path.class}); }
-		catch (Exception e) { /*ReflectInvokeMethod allready prints errors*/ return false; }
-	}
-
-	public boolean sketchFile_fileExists(SketchFile sketchFile) {
-		try { return (boolean)ReflectInvokeMethod("fileExists", sketchFile); }
-		catch (Exception e) { /*ReflectInvokeMethod allready prints errors*/ return false; }
-	}
-	
-	public boolean addNewFile(String fileName, String contents) { // for the API
-		File folder;
-		try  { folder = sketch.getFolder(); }
-		catch (Exception e) { System.err.println(e); return false; }
-
-		//System.out.println("folder: " + folder.toString());
-		File newFile = new File(folder, fileName);
-		int fileIndex = sketch.findFileIndex(newFile);
-		if (fileIndex >= 0) { // file allready exist, just change the contents.
-		  tabs.get(fileIndex).setText(contents);
-		  System.out.println("file allready exists " + fileName);
-		  return true;
-		}
-		SketchFile sketchFile;
-		try { sketchFile = sketch.addFile(fileName); }
-		catch (IOException e) { e.printStackTrace(); return false; }
-		editor_addTab(sketchFile, contents);
-		System.out.println("added new file " + fileName);
-		editor.selectTab(editor.findTabIndex(sketchFile));
-		
-		return true;
-	}
-	public boolean removeFile(String fileName) { // for the API, so that files could be removed
-		File newFile = new File(sketch.getFolder(), fileName);
-		int fileIndex = sketch.findFileIndex(newFile);
-		if (fileIndex >= 0) { // file exist
-		    SketchFile sketchFile = sketch.getFile(fileIndex);
-			boolean neverSavedTab = !sketchFile_fileExists(sketchFile);
-			
-			if (!sketchFile_delete(sketchFile) && !neverSavedTab) {
-				System.err.println("Couldn't remove the file " + fileName);
-				return false;
-			}
-			if (neverSavedTab) {
-				// remove the file from the sketch list
-				sketch_removeFile(sketchFile);
-			}
-			editor_removeTab(sketchFile);
-
-			// just set current tab to the main tab
-			editor.selectTab(0);
-
-			// update the tabs
-			header.repaint();
-			return true;
-		}
-		System.err.println("file don't exists in sketch " + fileName);
-		return false;
-	}
-	public boolean renameFile(String oldFileName, String newFileName) { // for the API, so that it can rename files
-		File newFile = new File(sketch.getFolder(), oldFileName);
-		int fileIndex = sketch.findFileIndex(newFile);
-		if (fileIndex >= 0) { // file exist
-		  SketchFile sketchFile = sketch.getFile(fileIndex);
-		  try {
-			sketchFile.renameTo(newFileName);
-			// update the tabs
-			header.rebuild();
-			return true;
-		  } catch (IOException e) {
-			e.printStackTrace();
-		  }
-		}
-		return false;
-	}
-	
-	public void verifyCompile() {
-		editor.setAlwaysOnTop(false);
-		editor.setAlwaysOnTop(true);
-		editor.setAlwaysOnTop(false);
-		editor.handleRun(false, presentHandler, runHandler);
-	}
-
-	public void upload() {
-		editor.setAlwaysOnTop(false);
-		editor.setAlwaysOnTop(true);
-		editor.setAlwaysOnTop(false);
-		editor.handleExport(false);
-	}
-	
 	public String parseGET(Map<String, String> query) {
 		String cmd = query.get("cmd");
 		//if (!cmd.equals("ping"))
@@ -628,12 +276,12 @@ public class API_WebServer implements Tool {
 		}
 		else if (cmd.equals("compile"))
 		{
-			verifyCompile();
+			ideh.verifyCompile();
 			System.out.println("WSAPI compile");
 		}
 		else if (cmd.equals("upload"))
 		{   
-			upload();
+			ideh.upload();
 			System.out.println("WSAPI upload");
 		}
 		else if (cmd.equals("renameFile"))
@@ -643,21 +291,21 @@ public class API_WebServer implements Tool {
 			String to = query.get("to");
 			if (to == null) { System.out.println("Missing 'to' parameter @ renameFile"); return "Missing 'to' parameter @ renameFile"; }
 			System.out.println("WSAPI renameFile from:" + from + ", to:" + to);
-			renameFile(from, to);
+			ideh.renameFile(from, to);
 		}
 		else if (cmd.equals("removeFile"))
 		{
 			String name = query.get("fileName");
 			if (name == null) { System.out.println("Missing 'fileName' parameter @ removeFile"); return "Missing 'fileName' parameter @ removeFile"; }
 			System.out.println("WSAPI removeFile:" + name);
-			removeFile(name);
+			ideh.removeFile(name);
 		}
 		else if(cmd.equals("getFile"))
 		{
 			String name = query.get("fileName");
 			if (name == null) { System.out.println("Missing 'fileName' parameter @ getFile"); return "Missing 'fileName' parameter @ getFile"; }
 			System.out.println("WSAPI getFile:" + name);
-			return getFile(name);
+			return ideh.getFile(name);
 		}
 		else
 			return "unknown GET cmd: " + cmd;
@@ -677,7 +325,7 @@ public class API_WebServer implements Tool {
 		try { arrKeywords = jsonObj.getJSONArray("keywords"); } catch (Exception e) { returnStr += " >>>warning: keywords array missing in JSON<<< "; if (debugPrint)e.printStackTrace();}
 		
 		if (removeOtherFiles)
-			RemoveFilesNotInJSON(arrFiles);
+		ideh.RemoveFilesNotInJSON(arrFiles);
 
 		if (arrFiles != null)
 			returnStr += parsePOST_JSONfiles(arrFiles);
@@ -703,9 +351,9 @@ public class API_WebServer implements Tool {
 			try { contents = file.getString("contents"); } catch (Exception e) { returnStr += " >>>error: fileObject don't contain contents<<< ";if (debugPrint)e.printStackTrace(); continue; }
 			
 			if (name.endsWith(".cpp") || name.endsWith(".c") || name.endsWith(".h") || name.endsWith(".hpp") || name.endsWith(".ino"))
-				addNewFile(name, contents); // adds a new file to the sketch-project
+				ideh.addNewFile(name, contents); // adds a new file to the sketch-project
 			else
-				setFile(name, contents); // this writes a file without the IDE knowing it
+				ideh.setFile(name, contents); // this writes a file without the IDE knowing it
 		}
 		return returnStr;
 	}
@@ -722,15 +370,15 @@ public class API_WebServer implements Tool {
 			try { type = keyword.getString("type"); } catch (Exception e) { returnStr += " >>>error: keyword don't contain type<<< ";if (debugPrint)e.printStackTrace(); continue; }
 			
 			sbKeywords.append(token+"\t"+type+"\r\n");
-			keywordOldToken.put(token, type);
+			ideh.keywordOldToken.put(token, type);
 		}
-		pdeKeywords_fillMissingTokenType();
-		editor.updateKeywords(pdeKeywords);
+		ideh.pdeKeywords_fillMissingTokenType();
+		editor.updateKeywords(ideh.pdeKeywords);
 		String sbKeywordsContents = sbKeywords.toString();
 		if (debugPrint)	System.out.println("setting new keywords:\n" + sbKeywordsContents);
 
 		if (!sbKeywordsContents.equals(""))
-			setFile(sketchKeywordsTempFileName, sbKeywordsContents);
+			ideh.setFile(ideh.sketchKeywordsTempFileName, sbKeywordsContents);
 		return returnStr;
 	}
 }

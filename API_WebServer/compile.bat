@@ -1,7 +1,7 @@
 @echo off
 
 set arduinoInstallDir=G:\arduino-1.8.13
-set arduinoInstallDir2=G:\arduino-1.8.12
+set arduinoSketchbookDir=G:\ArduinoSketchbook
 cd bin
 del/F/Q/S *
 cd ..
@@ -12,6 +12,9 @@ cd bin
 jar cvf API_WebServer.jar *
 cd ..
 copy .\bin\API_WebServer.jar .\tool\API_WebServer.jar
+
+copy %~dp0tool\* %arduinoSketchbookDir%\tools\API_WebServer\tool\*
+copy %~dp0src\* %arduinoSketchbookDir%\tools\API_WebServer\src\*
 
 echo ***************
 echo *** Success ***
