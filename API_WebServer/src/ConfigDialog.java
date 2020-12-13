@@ -19,7 +19,8 @@ public class ConfigDialog extends JPanel {
     public JTextField txtBiDirDataWebSocketServerPort;
     public JCheckBox chkAutostart;
     public JCheckBox chkDebugMode;
-    public JList lstMidiDevices;
+    public JList lstMidiDeviceIn;
+    public JList lstMidiDeviceOut;
     public JButton btnRefreshMidiDevices;
     public JTextField txtTermCapWebSocketServerPort;
 
@@ -35,12 +36,13 @@ public class ConfigDialog extends JPanel {
         txtBiDirDataWebSocketServerPort = new JTextField (5);
         chkAutostart = new JCheckBox ("Autostart Server at Arduino IDE start");
         chkDebugMode = new JCheckBox ("Activates some debug output");
-        lstMidiDevices = new JList (jcomp8Items);
+        lstMidiDeviceIn = new JList (jcomp8Items);
+        lstMidiDeviceOut = new JList (jcomp8Items);
         btnRefreshMidiDevices = new JButton ("Refresh MIDI Devices");
         txtTermCapWebSocketServerPort = new JTextField (5);
 
         //adjust size and set layout
-        setPreferredSize (new Dimension (297, 574));
+        setPreferredSize (new Dimension (450, 574));
         setLayout (null);
 
         //add components
@@ -51,7 +53,8 @@ public class ConfigDialog extends JPanel {
         add (txtBiDirDataWebSocketServerPort);
         add (chkAutostart);
         add (chkDebugMode);
-        add (lstMidiDevices);
+        add (lstMidiDeviceIn);
+        add (lstMidiDeviceOut);
         add (btnRefreshMidiDevices);
         add (txtTermCapWebSocketServerPort);
 
@@ -63,7 +66,8 @@ public class ConfigDialog extends JPanel {
         txtBiDirDataWebSocketServerPort.setBounds (5, 65, 50, 25);
         chkAutostart.setBounds (5, 100, 245, 25);
         chkDebugMode.setBounds (5, 130, 195, 20);
-        lstMidiDevices.setBounds (5, 205, 285, 355);
+        lstMidiDeviceIn.setBounds (5, 205, 200, 355);
+        lstMidiDeviceOut.setBounds (210, 205, 200, 355);
         btnRefreshMidiDevices.setBounds (5, 175, 285, 25);
         txtTermCapWebSocketServerPort.setBounds (5, 35, 50, 25);
     }

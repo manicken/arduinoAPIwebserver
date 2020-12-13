@@ -8,8 +8,10 @@ import java.io.*;
 
 public class MidiHelper {
 
-    public int selectedDeviceIndex = -1;
-    public MidiDevice device;
+    public int selectedInDeviceIndex = -1;
+    public int selectedOutDeviceIndex = -1;
+    public MidiDevice inDevice;
+    public MidiDevice outDevice;
     public Receiver rcvr;
 
     public MidiHelper()
@@ -47,46 +49,78 @@ public class MidiHelper {
         MidiDevice.Info[] infos = MidiSystem.getMidiDeviceInfo();
        //for (int i = 0; i < infos.length; i++) {
             try {
-                device = MidiSystem.getMidiDevice(infos[selectedDeviceIndex]);
+                inDevice = MidiSystem.getMidiDevice(infos[selectedInDeviceIndex]);
 
                 //does the device have any transmitters?
                 //if it does, add it to the device list
-                System.out.println(infos[selectedDeviceIndex]);
+                System.out.println(infos[selectedInDeviceIndex]);
 
                 //get all transmitters
-                List<Transmitter> transmitters = device.getTransmitters();
+                List<Transmitter> transmitters = inDevice.getTransmitters();
                 //and for each transmitter
 
                 for(int j = 0; j<transmitters.size();j++) {
                     //create a new receiver
                     transmitters.get(j).setReceiver(
                         //using my own MidiInputReceiver
-                        new MidiInputReceiver(device.getDeviceInfo().toString())
+                        new MidiInputReceiver(inDevice.getDeviceInfo().toString())
                     );
                 }
                 try{
-                Transmitter trans = device.getTransmitter();
-                trans.setReceiver(new MidiInputReceiver(device.getDeviceInfo().toString()));
+                Transmitter trans = inDevice.getTransmitter();
+                trans.setReceiver(new MidiInputReceiver(inDevice.getDeviceInfo().toString()));
                 System.out.println("midi in");
-                } catch (Exception e) {}
-                
-                try {
-                    rcvr = device.getReceiver();
-                    System.out.println("midi out");
-                } catch (Exception e) {}
+                } catch (Exception e) { return false;}
 
                 //open device
-                device.open();
+                inDevice.open();
 
                 
                 //if code gets this far without throwing an exception
                 //print a success message
-                System.out.println(device.getDeviceInfo()+" Was Opened");
+                System.out.println(inDevice.getDeviceInfo()+" Was Opened");
 
-                return true;
+                
 
             } catch (MidiUnavailableException e) { e.printStackTrace(); return false; }
 
+            try {
+                outDevice = MidiSystem.getMidiDevice(infos[selectedInDeviceIndex]);
+
+                //does the device have any transmitters?
+                //if it does, add it to the device list
+                System.out.println(infos[selectedInDeviceIndex]);
+
+                //get all transmitters
+                List<Transmitter> transmitters = outDevice.getTransmitters();
+                //and for each transmitter
+
+                /*for(int j = 0; j<transmitters.size();j++) {
+                    //create a new receiver
+                    transmitters.get(j).setReceiver(
+                        //using my own MidiInputReceiver
+                        new MidiInputReceiver(outDevice.getDeviceInfo().toString())
+                    );
+                }*/
+                
+                try {
+                    rcvr = outDevice.getReceiver();
+                    System.out.println("midi out");
+                    //open device
+                    outDevice.open();
+
+                    
+                    //if code gets this far without throwing an exception
+                    //print a success message
+                    System.out.println(outDevice.getDeviceInfo()+" Was Opened");
+
+                    
+                } catch (Exception e) { return false; }
+
+                
+
+            } catch (MidiUnavailableException e) { e.printStackTrace(); return false; }
+            return true;
         //}
         //return true;
     }

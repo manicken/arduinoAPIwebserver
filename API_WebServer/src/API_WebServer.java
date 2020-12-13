@@ -213,7 +213,8 @@ public class API_WebServer implements Tool {
 	private void refreshMidiDevices()
 	{
 		//cd.lstMidiDevices.clear();
-		cd.lstMidiDevices.setListData(midi.GetDeviceList());
+		cd.lstMidiDeviceIn.setListData(midi.GetDeviceList());
+		cd.lstMidiDeviceOut.setListData(midi.GetDeviceList());
 	}
 	public void ShowConfigDialog() {
 		if (cd == null)
@@ -241,7 +242,8 @@ public class API_WebServer implements Tool {
 			biDirDataWebSocketServerPort = Integer.parseInt(cd.txtBiDirDataWebSocketServerPort.getText());
 			autostart = cd.chkAutostart.isSelected();
 			debugPrint = cd.chkDebugMode.isSelected();
-			midi.selectedDeviceIndex = cd.lstMidiDevices.getSelectedIndex();
+			midi.selectedInDeviceIndex = cd.lstMidiDeviceIn.getSelectedIndex();
+			midi.selectedOutDeviceIndex = cd.lstMidiDeviceOut.getSelectedIndex();
 			if (midi.OpenDevice())
 			{
 				System.out.println("hurray");
