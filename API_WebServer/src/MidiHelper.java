@@ -14,9 +14,11 @@ public class MidiHelper {
     public MidiDevice outDevice;
     public Receiver rcvr;
 
+    public MidiDevice.Info[] devices;
+
     public MidiHelper()
     {
-
+        devices = MidiSystem.getMidiDeviceInfo();
     }
 
     public void Send(int[] params)
@@ -35,7 +37,7 @@ public class MidiHelper {
 
     public String[] GetDeviceList()
     {
-        MidiDevice.Info[] devices = MidiSystem.getMidiDeviceInfo();
+        
         String[] deviceNames = new String[devices.length];
         for (int i = 0; i < devices.length; i++)
         {
@@ -43,88 +45,87 @@ public class MidiHelper {
         }
         return deviceNames;
     }
-
-    public boolean OpenDevice()
+    public boolean OpenDevices()
     {
-        MidiDevice.Info[] infos = MidiSystem.getMidiDeviceInfo();
-       //for (int i = 0; i < infos.length; i++) {
-            try {
-                inDevice = MidiSystem.getMidiDevice(infos[selectedInDeviceIndex]);
-
-                //does the device have any transmitters?
-                //if it does, add it to the device list
-                System.out.println(infos[selectedInDeviceIndex]);
-
-                //get all transmitters
-                List<Transmitter> transmitters = inDevice.getTransmitters();
-                //and for each transmitter
-
-                for(int j = 0; j<transmitters.size();j++) {
-                    //create a new receiver
-                    transmitters.get(j).setReceiver(
-                        //using my own MidiInputReceiver
-                        new MidiInputReceiver(inDevice.getDeviceInfo().toString())
-                    );
-                }
-                try{
-                Transmitter trans = inDevice.getTransmitter();
-                trans.setReceiver(new MidiInputReceiver(inDevice.getDeviceInfo().toString()));
-                System.out.println("midi in");
-                } catch (Exception e) { return false;}
-
-                //open device
-                inDevice.open();
-
-                
-                //if code gets this far without throwing an exception
-                //print a success message
-                System.out.println(inDevice.getDeviceInfo()+" Was Opened");
-
-                
-
-            } catch (MidiUnavailableException e) { e.printStackTrace(); return false; }
-
-            try {
-                outDevice = MidiSystem.getMidiDevice(infos[selectedInDeviceIndex]);
-
-                //does the device have any transmitters?
-                //if it does, add it to the device list
-                System.out.println(infos[selectedInDeviceIndex]);
-
-                //get all transmitters
-                List<Transmitter> transmitters = outDevice.getTransmitters();
-                //and for each transmitter
-
-                /*for(int j = 0; j<transmitters.size();j++) {
-                    //create a new receiver
-                    transmitters.get(j).setReceiver(
-                        //using my own MidiInputReceiver
-                        new MidiInputReceiver(outDevice.getDeviceInfo().toString())
-                    );
-                }*/
-                
-                try {
-                    rcvr = outDevice.getReceiver();
-                    System.out.println("midi out");
-                    //open device
-                    outDevice.open();
-
-                    
-                    //if code gets this far without throwing an exception
-                    //print a success message
-                    System.out.println(outDevice.getDeviceInfo()+" Was Opened");
-
-                    
-                } catch (Exception e) { return false; }
-
-                
-
-            } catch (MidiUnavailableException e) { e.printStackTrace(); return false; }
-            return true;
-        //}
-        //return true;
+        boolean anyOpen = false;
+        if (OpenInDevice())
+        {
+            anyOpen = true;
+            System.out.println("Input: " + inDevice.getDeviceInfo()+" Was Opened");
+            
+        }
+        if (OpenOutDevice())
+        {
+            anyOpen = true;
+            System.out.println("Output: " + outDevice.getDeviceInfo()+" Was Opened");
+        }
+        return anyOpen;
     }
+    public boolean OpenInDevice()
+    {
+       //for (int i = 0; i < infos.length; i++) {
+        try {
+            inDevice = MidiSystem.getMidiDevice(devices[selectedInDeviceIndex]);
 
+            //does the device have any transmitters?
+            //if it does, add it to the device list
+            System.out.println("trying to open:" + devices[selectedInDeviceIndex]);
+
+            //get all transmitters
+            List<Transmitter> transmitters = inDevice.getTransmitters();
+            //and for each transmitter
+
+            for(int j = 0; j<transmitters.size();j++) {
+                //create a new receiver
+                transmitters.get(j).setReceiver(
+                    //using my own MidiInputReceiver
+                    new MidiInputReceiver(inDevice.getDeviceInfo().toString())
+                );
+            }
+            try{
+            Transmitter trans = inDevice.getTransmitter();
+            trans.setReceiver(new MidiInputReceiver(inDevice.getDeviceInfo().toString()));
+           // System.out.println("midi in");
+            } catch (Exception e) { e.printStackTrace(); return false; }
+
+            //open device
+            inDevice.open();
+            return true;
+        } catch (MidiUnavailableException e) { e.printStackTrace(); return false; }
+    }
+    public boolean OpenOutDevice()
+    {
+        try {
+            outDevice = MidiSystem.getMidiDevice(devices[selectedOutDeviceIndex]);
+
+            //does the device have any transmitters?
+            //if it does, add it to the device list
+            System.out.println("trying to open:" + devices[selectedOutDeviceIndex]);
+
+            //get all transmitters
+            //List<Transmitter> transmitters = outDevice.getTransmitters();
+            //and for each transmitter
+
+            /*for(int j = 0; j<transmitters.size();j++) {
+                //create a new receiver
+                transmitters.get(j).setReceiver(
+                    //using my own MidiInputReceiver
+                    new MidiInputReceiver(outDevice.getDeviceInfo().toString())
+                );
+            }*/
+            
+            try {
+                rcvr = outDevice.getReceiver();
+                //System.out.println("midi out");
+                //open device
+                outDevice.open();
+
+                return true;
+
+            } catch (Exception e) { e.printStackTrace(); return false; }
+
+        } catch (MidiUnavailableException e) { e.printStackTrace(); return false; }
+    }
 }
 
 //tried to write my own class. I thought the send method handles an MidiEvents sent to it

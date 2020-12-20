@@ -244,10 +244,9 @@ public class API_WebServer implements Tool {
 			debugPrint = cd.chkDebugMode.isSelected();
 			midi.selectedInDeviceIndex = cd.lstMidiDeviceIn.getSelectedIndex();
 			midi.selectedOutDeviceIndex = cd.lstMidiDeviceOut.getSelectedIndex();
-			if (midi.OpenDevice())
-			{
+			if (midi.OpenDevices())
 				System.out.println("hurray");
-			}
+
 			SaveSettings();
 		} else { System.out.println("Cancelled"); }
 	}
