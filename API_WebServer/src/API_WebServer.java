@@ -108,7 +108,7 @@ public class API_WebServer implements Tool {
 		try {
 			mwss = new MyWebSocketServer(biDirDataWebSocketServerPort, (String message) -> {
 				message = message.toLowerCase();
-				if (message.startsWith("midisend"))
+				if (message.startsWith("midi"))
 				{
 					int beginIndex = message.indexOf("(");
 					if (beginIndex == -1) { mwss.broadcast("midi send missing first ("); return; }
@@ -168,7 +168,9 @@ public class API_WebServer implements Tool {
 		System.out.println("startin API_WebServer ...");
 		try{
 			ideh = new IDEhelper(editor);
-			midi = new MidiHelper();
+			midi = new MidiHelper((String message) -> {
+				mwss.broadcast("midi(" + message + ")<br>");
+				});
 			System.out.println("rootDir="+ ideh.GetArduinoRootDir());
 			cm = new CustomMenu(editor, thisToolMenuTitle, 
 				new JMenuItem[] {

@@ -5,6 +5,7 @@ import javax.sound.midi.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
+import java.util.function.Consumer;
 
 public class MidiHelper {
 
@@ -16,8 +17,11 @@ public class MidiHelper {
 
     public MidiDevice.Info[] devices;
 
-    public MidiHelper()
+    Consumer<String> onMessageHandler;
+
+    public MidiHelper(Consumer<String> _onMessageHandler)
     {
+        this.onMessageHandler = _onMessageHandler;
         devices = MidiSystem.getMidiDeviceInfo();
     }
 
@@ -37,7 +41,7 @@ public class MidiHelper {
 
     public String[] GetDeviceList()
     {
-        
+        devices = MidiSystem.getMidiDeviceInfo();
         String[] deviceNames = new String[devices.length];
         for (int i = 0; i < devices.length; i++)
         {
@@ -79,12 +83,12 @@ public class MidiHelper {
                 //create a new receiver
                 transmitters.get(j).setReceiver(
                     //using my own MidiInputReceiver
-                    new MidiInputReceiver(inDevice.getDeviceInfo().toString())
+                    new MidiInputReceiver(inDevice.getDeviceInfo().toString(), onMessageHandler)
                 );
             }
             try{
             Transmitter trans = inDevice.getTransmitter();
-            trans.setReceiver(new MidiInputReceiver(inDevice.getDeviceInfo().toString()));
+            trans.setReceiver(new MidiInputReceiver(inDevice.getDeviceInfo().toString(), onMessageHandler));
            // System.out.println("midi in");
             } catch (Exception e) { e.printStackTrace(); return false; }
 
@@ -102,18 +106,6 @@ public class MidiHelper {
             //if it does, add it to the device list
             System.out.println("trying to open:" + devices[selectedOutDeviceIndex]);
 
-            //get all transmitters
-            //List<Transmitter> transmitters = outDevice.getTransmitters();
-            //and for each transmitter
-
-            /*for(int j = 0; j<transmitters.size();j++) {
-                //create a new receiver
-                transmitters.get(j).setReceiver(
-                    //using my own MidiInputReceiver
-                    new MidiInputReceiver(outDevice.getDeviceInfo().toString())
-                );
-            }*/
-            
             try {
                 rcvr = outDevice.getReceiver();
                 //System.out.println("midi out");
@@ -131,20 +123,27 @@ public class MidiHelper {
 //tried to write my own class. I thought the send method handles an MidiEvents sent to it
 class MidiInputReceiver implements Receiver {
   public String name;
-  public MidiInputReceiver(String name) {
+  Consumer<String> onMessageHandler;
+  public MidiInputReceiver(String name,Consumer<String> _onMessageHandler) {
+    this.onMessageHandler = _onMessageHandler;
     this.name = name;
   }
   public void send(MidiMessage msg, long timeStamp) {
-    System.out.println("midi received" + byteArrayToString(msg.getMessage()));
+    if (onMessageHandler != null)
+        onMessageHandler.accept(byteArrayToString(msg.getMessage(), ","));
+    else
+        System.out.println("midi received(" + byteArrayToString(msg.getMessage(), ",") + ")");
   }
   public void close() {}
 
-  private String byteArrayToString(byte[] array)
+  private String byteArrayToString(byte[] array, String seperator)
   {
       String dataHex = "";
       for (int i= 0; i < array.length; i++)
       {
           dataHex+= String.format("%02X ", array[i]);
+          if (i < array.length - 1)
+            dataHex += seperator;
       }
       return dataHex;
   } 
