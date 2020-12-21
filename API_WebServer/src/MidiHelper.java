@@ -17,12 +17,19 @@ public class MidiHelper {
 
     public MidiDevice.Info[] devices;
 
+    public List<MidiDevice.Info> inDevices;
+    public List<MidiDevice.Info> outDevices;
+    public List<String> inDeviceNames;
+    public List<String> outDeviceNames;
+
     Consumer<String> onMessageHandler;
 
     public MidiHelper(Consumer<String> _onMessageHandler)
     {
         this.onMessageHandler = _onMessageHandler;
         devices = MidiSystem.getMidiDeviceInfo();
+        inDevices = new ArrayList<MidiDevice.Info>();
+        outDevices = new ArrayList<MidiDevice.Info>();
     }
 
     public void Send(int[] params)
@@ -39,15 +46,77 @@ public class MidiHelper {
         catch (InvalidMidiDataException imde) { }
     }
 
-    public String[] GetDeviceList()
+    public String GetCurrentInDeviceNameDescr()
     {
+        return inDeviceNames.get(selectedInDeviceIndex);
+    }
+    public String GetCurrentOutDeviceNameDescr()
+    {
+        return outDeviceNames.get(selectedOutDeviceIndex);
+    }
+
+    public String[] GetInDeviceList()
+    {
+        inDevices.clear();
         devices = MidiSystem.getMidiDeviceInfo();
-        String[] deviceNames = new String[devices.length];
+        inDeviceNames = new ArrayList<String>();
         for (int i = 0; i < devices.length; i++)
         {
-            deviceNames[i] = devices[i].getName() + " " + devices[i].getDescription();
+            if (!IsInDevice(devices[i])) continue;
+            inDevices.add(devices[i]);
+            inDeviceNames.add(devices[i].getName() + " " + devices[i].getDescription());
         }
-        return deviceNames;
+        return inDeviceNames.toArray(new String[0]);
+    }
+    public String[] GetOutDeviceList()
+    {
+        outDevices.clear();
+        devices = MidiSystem.getMidiDeviceInfo();
+        outDeviceNames = new ArrayList<String>();
+        for (int i = 0; i < devices.length; i++)
+        {
+            if (!IsOutDevice(devices[i])) continue;
+            outDevices.add(devices[i]);
+            outDeviceNames.add(devices[i].getName() + " " + devices[i].getDescription());
+        }
+        return outDeviceNames.toArray(new String[0]);
+    }
+    public boolean OpenInDevice(String nameDescr)
+    {
+        if (nameDescr.length() == 0) return false;
+        
+        GetInDeviceList(); // generate list
+        int index = inDeviceNames.indexOf(nameDescr);
+        if (index == -1) { System.out.println("Could not found in device:" + nameDescr); return false;}
+        selectedInDeviceIndex = index;
+        //System.out.println("trying open midi in device: " +nameDescr);
+        return OpenInDevice();
+    }
+    public boolean OpenOutDevice(String nameDescr)
+    {
+        if (nameDescr.length() == 0) return false;
+        
+        GetOutDeviceList(); // generate list
+        int index = outDeviceNames.indexOf(nameDescr);
+        if (index == -1) { System.out.println("Could not found out device:" + nameDescr); return false;}
+        selectedOutDeviceIndex = index;
+        //System.out.println("trying open midi out device: " +nameDescr);
+        return OpenOutDevice();
+    }
+    public boolean OpenDevices(String inDevice, String outDevice)
+    {
+        boolean anyOpen = false;
+        if (OpenInDevice(inDevice))
+        {
+            anyOpen = true;
+            System.out.println("Input: " + inDevice + " Was Opened");
+        }
+        if (OpenOutDevice(outDevice))
+        {
+            anyOpen = true;
+            System.out.println("Output: " + outDevice + " Was Opened");
+        }
+        return anyOpen;
     }
     public boolean OpenDevices()
     {
@@ -65,57 +134,58 @@ public class MidiHelper {
         }
         return anyOpen;
     }
+    public boolean IsInDevice(MidiDevice.Info device)
+    {
+        try {
+            Transmitter trans = MidiSystem.getMidiDevice(device).getTransmitter();
+            return true;
+        }catch (Exception e) { return false;}
+    }
+    public boolean IsOutDevice(MidiDevice.Info device)
+    {
+        try {
+            Receiver rcvr = MidiSystem.getMidiDevice(device).getReceiver();
+            return true;
+        }catch (Exception e) { return false;}
+    }
     public boolean OpenInDevice()
     {
        //for (int i = 0; i < infos.length; i++) {
         try {
-            inDevice = MidiSystem.getMidiDevice(devices[selectedInDeviceIndex]);
-
-            //does the device have any transmitters?
-            //if it does, add it to the device list
-            System.out.println("trying to open:" + devices[selectedInDeviceIndex]);
-
-            //get all transmitters
-            List<Transmitter> transmitters = inDevice.getTransmitters();
-            //and for each transmitter
-
-            for(int j = 0; j<transmitters.size();j++) {
-                //create a new receiver
-                transmitters.get(j).setReceiver(
-                    //using my own MidiInputReceiver
-                    new MidiInputReceiver(inDevice.getDeviceInfo().toString(), onMessageHandler)
-                );
-            }
             try{
-            Transmitter trans = inDevice.getTransmitter();
-            trans.setReceiver(new MidiInputReceiver(inDevice.getDeviceInfo().toString(), onMessageHandler));
-           // System.out.println("midi in");
+                if (inDevice != null)
+                inDevice.close();
+            }catch (Exception e) { }
+            inDevice = MidiSystem.getMidiDevice(inDevices.get(selectedInDeviceIndex));
+            try{
+                if (inDevice != null)
+                inDevice.close();
+            }catch (Exception e) { }
+            try {
+                Transmitter trans = inDevice.getTransmitter();
+                trans.setReceiver(new MidiInputReceiver(inDevice.getDeviceInfo().toString(), onMessageHandler));
+                inDevice.open();
+                return true;
             } catch (Exception e) { e.printStackTrace(); return false; }
-
-            //open device
-            inDevice.open();
-            return true;
         } catch (MidiUnavailableException e) { e.printStackTrace(); return false; }
     }
     public boolean OpenOutDevice()
     {
         try {
-            outDevice = MidiSystem.getMidiDevice(devices[selectedOutDeviceIndex]);
-
-            //does the device have any transmitters?
-            //if it does, add it to the device list
-            System.out.println("trying to open:" + devices[selectedOutDeviceIndex]);
-
+            try{
+                if (outDevice != null)
+                outDevice.close();
+            }catch (Exception e) { }
+            outDevice = MidiSystem.getMidiDevice(outDevices.get(selectedOutDeviceIndex));
+            try{
+                if (outDevice != null)
+                outDevice.close();
+            }catch (Exception e) { }
             try {
                 rcvr = outDevice.getReceiver();
-                //System.out.println("midi out");
-                //open device
                 outDevice.open();
-
                 return true;
-
             } catch (Exception e) { e.printStackTrace(); return false; }
-
         } catch (MidiUnavailableException e) { e.printStackTrace(); return false; }
     }
 }

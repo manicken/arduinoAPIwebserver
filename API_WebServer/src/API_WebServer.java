@@ -215,8 +215,8 @@ public class API_WebServer implements Tool {
 	private void refreshMidiDevices()
 	{
 		//cd.lstMidiDevices.clear();
-		cd.lstMidiDeviceIn.setListData(midi.GetDeviceList());
-		cd.lstMidiDeviceOut.setListData(midi.GetDeviceList());
+		cd.lstMidiDeviceIn.setListData(midi.GetInDeviceList());
+		cd.lstMidiDeviceOut.setListData(midi.GetOutDeviceList());
 	}
 	public void ShowConfigDialog() {
 		if (cd == null)
@@ -259,6 +259,10 @@ public class API_WebServer implements Tool {
 		biDirDataWebSocketServerPort = PreferencesData.getInteger("manicken.apiWebServer.biDirDataWebSocketServerPort", biDirDataWebSocketServerPort);
 		autostart =	PreferencesData.getBoolean("manicken.apiWebServer.autostart", autostart);
 		debugPrint = PreferencesData.getBoolean("manicken.apiWebServer.debugPrint", debugPrint);
+		String midiInDevice = PreferencesData.get("manicken.apiWebServer.midiInDevice", "");
+		String midiOutDevice = PreferencesData.get("manicken.apiWebServer.midiOutDevice", "");
+		if (midi.OpenDevices(midiInDevice, midiOutDevice))
+			System.out.println("hurray!");
 	}
 	private void SaveSettings()
 	{
@@ -267,6 +271,8 @@ public class API_WebServer implements Tool {
 		PreferencesData.setInteger("manicken.apiWebServer.biDirDataWebSocketServerPort", biDirDataWebSocketServerPort);
 		PreferencesData.setBoolean("manicken.apiWebServer.autostart", autostart);
 		PreferencesData.setBoolean("manicken.apiWebServer.debugPrint", debugPrint);
+		PreferencesData.set("manicken.apiWebServer.midiInDevice", midi.GetCurrentInDeviceNameDescr());
+		PreferencesData.set("manicken.apiWebServer.midiOutDevice", midi.GetCurrentOutDeviceNameDescr());
 	}	
 
 	public String parseGET(Map<String, String> query) {
