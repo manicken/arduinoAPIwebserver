@@ -200,18 +200,18 @@ class MidiInputReceiver implements Receiver {
   }
   public void send(MidiMessage msg, long timeStamp) {
     if (onMessageHandler != null)
-        onMessageHandler.accept(byteArrayToString(msg.getMessage(), ","));
+        onMessageHandler.accept(byteArrayToHexString(msg.getMessage(), ","));
     else
-        System.out.println("midi received(" + byteArrayToString(msg.getMessage(), ",") + ")");
+        System.out.println("midi received(" + byteArrayToHexString(msg.getMessage(), ",") + ")");
   }
   public void close() {}
 
-  private String byteArrayToString(byte[] array, String seperator)
+  private String byteArrayToHexString(byte[] array, String seperator)
   {
       String dataHex = "";
       for (int i= 0; i < array.length; i++)
       {
-          dataHex+= String.format("%02X ", array[i]);
+          dataHex+= "0x" + String.format("%02X ", array[i]);
           if (i < array.length - 1)
             dataHex += seperator;
       }
