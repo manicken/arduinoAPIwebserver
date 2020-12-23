@@ -18,10 +18,26 @@ import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.Reflect;
 
+class ToolJMenu extends JMenuItem
+{
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
+	public Tool tool = null;
+
+	public ToolJMenu(String title, Tool tool)
+	{
+		super(title);
+		this.tool = tool;
+	}
+}
+
 public class CustomMenu {
 
 	public JMenuItem[] items;
 	public Editor editor;
+	public Tool tool;
 	
 	public String toolMenuTitle;
 
@@ -31,8 +47,9 @@ public class CustomMenu {
 
 	private boolean initOnce = false;
 
-	public CustomMenu(Editor editor, String toolMenuTitle, JMenuItem[] items)
+	public CustomMenu(Tool tool, Editor editor, String toolMenuTitle, JMenuItem[] items)
 	{
+		this.tool = tool;
 		this.editor = editor;
 		this.toolMenuTitle = toolMenuTitle;
 		this.items = items;
@@ -64,7 +81,10 @@ public class CustomMenu {
 		else
 			extensionsMenu = (JMenu)menubar.getSubElements()[existingExtensionsMenuIndex];
 
-		JMenu thisToolMenu = new JMenu(toolMenuTitle);	
+		
+
+		ToolJMenu thisToolMenu = new ToolJMenu(toolMenuTitle, tool);	
+
 
 		if (existingExtensionsMenuIndex == -1)
 			menubar.add(extensionsMenu, toolsMenuIndex+1);
@@ -81,9 +101,9 @@ public class CustomMenu {
 
 	private void initAtToolsMenu()
 	{
-		
 		int thisToolIndex = GetMenuItemIndex(toolsMenu, toolMenuTitle);
-		JMenu thisToolMenu = new JMenu(toolMenuTitle);
+		ToolJMenu thisToolMenu = new ToolJMenu(toolMenuTitle, tool);
+
 		// create new special menu
 		CreatePluginMenu(thisToolMenu);
 		// replace original menu
@@ -91,7 +111,7 @@ public class CustomMenu {
 		toolsMenu.insert(thisToolMenu, thisToolIndex);
 	}
 
-	private void CreatePluginMenu(JMenu thisToolMenu)
+	private void CreatePluginMenu(ToolJMenu thisToolMenu)
 	{
 		for (int i = 0; i < items.length; i++)
 		{

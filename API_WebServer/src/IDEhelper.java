@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
 
+import javax.swing.JMenu;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
@@ -29,9 +30,13 @@ import processing.app.EditorConsole;
 import processing.app.syntax.PdeKeywords;
 
 import org.json.*;
+import java.util.List;
+import javax.swing.JMenuBar;
+import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.MyConsoleOutputStream;
 import com.manicken.MyWebSocketServer;
+import com.manicken.CustomMenu;
 
 public class IDEhelper {
 
@@ -81,6 +86,24 @@ public class IDEhelper {
 		
 	}
 
+	public void GetPrevInstances()
+	{
+		List<Editor> editors = base.getEditors();
+
+		for (int i = 0; i < editors.size(); i++)
+		{
+			JMenuBar menubar = editors.get(i).getJMenuBar();
+			int existingExtensionsMenuIndex = CustomMenu.GetMenuBarItemIndex(menubar, tr("Extensions"));
+			if (existingExtensionsMenuIndex == -1) continue;
+			JMenu extensionsMenu = (JMenu)menubar.getSubElements()[existingExtensionsMenuIndex];
+			JMenu[] items = (JMenu[])menubar.getSubElements();
+			for (int ei = 0; ei < items.length; ei++)
+			{
+
+			}
+		}
+	}
+
 	public String GetArduinoRootDir() {
 		try {
 			File file = BaseNoGui.getToolsFolder();//new File(API_WebServer.class.getProtectionDomain().getCodeSource().getLocation().toURI());
@@ -112,6 +135,9 @@ public class IDEhelper {
 	}
 	
 	public void SystemOutHookStart(int webSocketServerPort) {
+		try {
+			if (mwss != null) mwss.stop();
+		} catch (Exception e) { System.err.println("cannot stop prev websocket server!!!"); e.printStackTrace();}
 		try {
 			mwss = new MyWebSocketServer(webSocketServerPort);
 			mwss.start();
