@@ -18,7 +18,7 @@ import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.Reflect;
 
-class ToolJMenu extends JMenuItem
+class ToolJMenu extends javax.swing.JMenu
 {
 	/**
 	 *

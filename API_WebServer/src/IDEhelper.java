@@ -32,6 +32,9 @@ import processing.app.syntax.PdeKeywords;
 import org.json.*;
 import java.util.List;
 import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.MenuElement;
+
 import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.MyConsoleOutputStream;
@@ -92,14 +95,26 @@ public class IDEhelper {
 
 		for (int i = 0; i < editors.size(); i++)
 		{
+			System.out.println("Editor: " + i);
 			JMenuBar menubar = editors.get(i).getJMenuBar();
 			int existingExtensionsMenuIndex = CustomMenu.GetMenuBarItemIndex(menubar, tr("Extensions"));
 			if (existingExtensionsMenuIndex == -1) continue;
 			JMenu extensionsMenu = (JMenu)menubar.getSubElements()[existingExtensionsMenuIndex];
-			JMenu[] items = (JMenu[])menubar.getSubElements();
-			for (int ei = 0; ei < items.length; ei++)
-			{
 
+			int itemCount = extensionsMenu.getItemCount();
+
+			for (int ei = 0; ei < itemCount; ei++)
+			{
+				JMenuItem jmenuitem = extensionsMenu.getItem(ei);
+				System.out.println("extension: " + jmenuitem.getText());
+				ToolJMenu item;
+				try {
+					item = (ToolJMenu)jmenuitem;
+					API_WebServer apiws = (API_WebServer)item.tool;
+
+					System.out.println("apiws: " + apiws.thisToolMenuTitle);
+					apiws.DisconnectServers();
+				}catch (Exception e) { }
 			}
 		}
 	}

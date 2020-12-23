@@ -30,6 +30,13 @@ public class MyConsoleOutputStream extends ByteArrayOutputStream {
 	private static MyConsoleOutputStream out;
 	private static MyConsoleOutputStream err;
 
+	public static void DisconnectWebsocketServer()
+	{
+		try {
+			if (mwss != null) mwss.stop();
+			System.out.println("terminal capture websocket server was stopped!");
+		} catch (Exception e) { System.err.println("cannot stop prev websocket server!!!"); e.printStackTrace();}
+	}
 	public static void setCurrentEditorConsole(EditorConsole editorConsole, SimpleAttributeSet console_stdOutStyle, SimpleAttributeSet console_stdErrStyle, int webSocketServerPort) {
 		try {
 			if (mwss != null) mwss.stop();
@@ -39,13 +46,7 @@ public class MyConsoleOutputStream extends ByteArrayOutputStream {
 			mwss = new MyWebSocketServer(webSocketServerPort);
 			mwss.start();
 		} catch (Exception e) { System.err.println("cannot start redirect websocket server!!!"); e.printStackTrace(); mwss = null; return; }
-		finally
-		{
-			try {
-				if (mwss != null) mwss.stop();
-				System.out.println("terminal capture websocket server was stopped!");
-			} catch (Exception e) { System.err.println("cannot stop prev websocket server!!!"); e.printStackTrace();}
-		}
+
 
 		
 		if (out == null) {
@@ -105,8 +106,8 @@ public class MyConsoleOutputStream extends ByteArrayOutputStream {
 	  newLinePrinted = newLinePrinted || text.contains("\n");
 	  if (editorConsole != null) {
 		SwingUtilities.invokeLater(() -> {
-		  try { editorConsole.insertString(text, attributes); } 
-		  catch (BadLocationException ble) { /*ignore*/ }
+		  //try { editorConsole.insertString(text, attributes); } 
+		  //catch (BadLocationException ble) { /*ignore*/ }
 
 		  try { mwss.broadcast("<span style=\"color:"+fgColorHex+";background-color:"+bgColorHex+";\">" + text.replace("\r\n", "<br>").replace("\r", "<br>").replace("\n", "<br>") + "</span>"); }
 		  catch (Exception ex) { /*ignore*/ }

@@ -77,7 +77,7 @@ public class API_WebServer implements Tool {
 	HttpServer server;
 	MyWebSocketServer bddwss; // BiDirDataWebSocketServer
 	
-	String thisToolMenuTitle = "API Web Server";
+	public String thisToolMenuTitle = "API Web Server";
 
 	int webServerPort = 8080; // replaced by code down
 	int terminalCaptureWebSocketServerPort = 3000;
@@ -105,6 +105,24 @@ public class API_WebServer implements Tool {
 		startWebsocketServer();
 		MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole, ideh.console_stdOutStyle, ideh.console_stdErrStyle, terminalCaptureWebSocketServerPort);
 	}
+	public void DisconnectServers()
+	{
+		try {
+			if (bddwss != null) bddwss.stop();
+			bddwss = null;
+			System.out.println("BiDirData websocket server was stopped!");
+		} catch (Exception e) { System.err.println("cannot stop prev websocket server!!!"); e.printStackTrace();}
+		try {
+			if (server != null) server.stop(1);
+			System.out.println("web server was stopped!");
+			server = null;
+		} catch (Exception e) { System.err.println("cannot stop prev web server!!!"); e.printStackTrace();}
+		MyConsoleOutputStream.DisconnectWebsocketServer();
+		try{
+		java.lang.Thread.sleep(2000);
+		}
+		catch (Exception motherfucker) {}
+	}
 
 	public void startWebsocketServer() {
 		try {
@@ -114,12 +132,6 @@ public class API_WebServer implements Tool {
 			bddwss = new MyWebSocketServer(biDirDataWebSocketServerPort, (String message) -> bddwss_DecodeRawMessage(message));
 			bddwss.start();
 		} catch (Exception e) { System.err.println("cannot start bidirdata websocket server!!!"); e.printStackTrace(); }
-		finally {
-			try {
-				if (bddwss != null) bddwss.stop();
-				System.out.println("BiDirData websocket server was stopped!");
-			} catch (Exception e) { System.err.println("cannot stop prev websocket server!!!"); e.printStackTrace();}
-		}
 	}
 
 	private void startWebServer() {
@@ -133,12 +145,6 @@ public class API_WebServer implements Tool {
 
 			System.out.println(" Server started on port " + webServerPort);
 		} catch (Exception e) { System.err.println("cannot start web server!!!"); e.printStackTrace(); }
-		finally {
-			try {
-			if (server != null) server.stop(1);
-			System.out.println("web server was stopped!");
-			} catch (Exception e) { System.err.println("cannot stop prev web server!!!"); e.printStackTrace();}
-		}
 	}
 
 	
@@ -154,7 +160,7 @@ public class API_WebServer implements Tool {
 		System.out.println("startin API_WebServer ...");
 		try{
 			ideh = new IDEhelper(editor);
-			ideh.GetPrevInstances();
+			
 			midi = new MidiHelper((String message) -> {	bddwss.broadcast("midiSend(" + message + ")<br>"); });
 
 			System.out.println("rootDir="+ ideh.GetArduinoRootDir());
@@ -166,6 +172,7 @@ public class API_WebServer implements Tool {
 					CustomMenu.Item("Init autocomplete", event -> ideh.ActivateAutoCompleteFunctionality())
 				});
 			cm.Init(useSeparateExtensionsMainMenu);
+			ideh.GetPrevInstances();
 
 			started = true;
 			
