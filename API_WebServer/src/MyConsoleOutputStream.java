@@ -110,7 +110,7 @@ public class MyConsoleOutputStream extends ByteArrayOutputStream {
 		  //catch (BadLocationException ble) { /*ignore*/ }
 
 		  try { mwss.broadcast("<span style=\"color:"+fgColorHex+";background-color:"+bgColorHex+";\">" + text.replace("\r\n", "<br>").replace("\r", "<br>").replace("\n", "<br>") + "</span>"); }
-		  catch (Exception ex) { /*ignore*/ }
+		  catch (Exception ex) { /*ignore*/ }//
 
 		});
   

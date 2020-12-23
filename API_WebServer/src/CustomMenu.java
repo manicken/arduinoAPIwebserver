@@ -77,7 +77,7 @@ public class CustomMenu {
 		
 
 		if (existingExtensionsMenuIndex == -1)
-			extensionsMenu = new JMenu(tr("Extensions"));
+			extensionsMenu = new JMenu(tr("Extensions"));//
 		else
 			extensionsMenu = (JMenu)menubar.getSubElements()[existingExtensionsMenuIndex];
 

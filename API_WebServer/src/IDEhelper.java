@@ -109,7 +109,7 @@ public class IDEhelper {
 				System.out.println("extension: " + jmenuitem.getText());
 				ToolJMenu item;
 				try {
-					item = (ToolJMenu)jmenuitem;
+					item = (ToolJMenu)jmenuitem;//
 					API_WebServer apiws = (API_WebServer)item.tool;
 
 					System.out.println("apiws: " + apiws.thisToolMenuTitle);
