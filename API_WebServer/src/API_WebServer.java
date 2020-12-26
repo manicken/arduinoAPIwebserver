@@ -419,12 +419,14 @@ public class API_WebServer implements Tool {
 		if (message.startsWith("in"))
 		{
 			midi.selectedInDeviceIndex = index;
-			midi.OpenInDevice();
+			if (midi.OpenInDevice())
+				System.out.println("Input: " + midi.inDevice.getDeviceInfo()+" Was Opened");
 		}
 		else if (message.startsWith("out"))
 		{
 			midi.selectedOutDeviceIndex = index;
-			midi.OpenOutDevice();
+			if (midi.OpenOutDevice())
+				System.out.println("Output: " + midi.outDevice.getDeviceInfo()+" Was Opened");
 		}
 		else
 		{
