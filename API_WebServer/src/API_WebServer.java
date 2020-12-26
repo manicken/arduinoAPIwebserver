@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.prefs.Preferences;
 
+import javax.lang.model.util.ElementScanner6;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
@@ -334,19 +335,29 @@ public class API_WebServer implements Tool {
 		message = message.toLowerCase();
 		if (message.startsWith("midisend")) // most common check first
 			bddwss_DecodeMidiMessage(message);			
-		else if (message.equals("mididevicesget"))
+		else if (message.equals("midigetdevices"))
 			bddwss_GetMidiDevices();
+		else if (message.startsWith("midisetdevice"))
+			bddwss_SetMidiDevice(message.substring("midisetdevice".length()));
 		else
 			System.out.println("biDirDataWebSocketServerData unknown command: " + message);
 	}
+	private String GetSubStringBetween(String in, String startToken, String endToken)
+	{
+		int beginIndex = in.indexOf("(");
+		if (beginIndex == -1) { return null; }
+		int endIndex = in.indexOf(")");
+		if (endIndex == -1) { return null; }
+		return in.substring(beginIndex+1, endIndex);
+	}
 	private void bddwss_DecodeMidiMessage(String message)
 	{
-		int beginIndex = message.indexOf("(");
-		if (beginIndex == -1) { bddwss.broadcast("err. midi send missing first ("); return; }
-		int endIndex = message.indexOf(")");
-		if (endIndex == -1) { bddwss.broadcast("err. midi send missing last )"); return; }
-
-		message = message.substring(beginIndex+1, endIndex);
+		message = GetSubStringBetween(message, "(", ")");
+		if (message == null)
+		{
+			bddwss.broadcast("err. midi send missing (first or last) parantesis");
+			return; 
+		}
 		System.out.println("midisend " + message);
 		String[] params = message.split(",");
 		if (params.length != 3) {bddwss.broadcast("err. midi send params.length != 3"); return;}
@@ -380,7 +391,7 @@ public class API_WebServer implements Tool {
 			if (i < inDev.length -1)
 				sb.append("\t");
 		}
-		sb.append(")\n");
+		sb.append(")["+midi.selectedInDeviceIndex+"]\n");
 		bddwss.broadcast(sb.toString());
 		
 		sb = new StringBuilder();
@@ -391,8 +402,35 @@ public class API_WebServer implements Tool {
 			if (i < outDev.length -1)
 				sb.append("\t");
 		}
-		sb.append(")\n");
+		sb.append(")["+midi.selectedOutDeviceIndex+"]\n");
 		bddwss.broadcast(sb.toString());
+	}
+	private void bddwss_SetMidiDevice(String message)
+	{
+		String param = GetSubStringBetween(message, "(", ")");
+		if (param == null)
+		{
+			bddwss.broadcast("err. midi set device missing (first or last) parantesis");
+			return; 
+		}
+		int index = 0;
+		try {index = Integer.parseInt(param);} catch (Exception ex) {bddwss.broadcast("err. midi set device index is not a integer"); return;}
+
+		if (message.startsWith("in"))
+		{
+			midi.selectedInDeviceIndex = index;
+			midi.OpenInDevice();
+		}
+		else if (message.startsWith("out"))
+		{
+			midi.selectedOutDeviceIndex = index;
+			midi.OpenOutDevice();
+		}
+		else
+		{
+			bddwss.broadcast("err. midi set device - missing 'in' or 'out'");
+			return;
+		}
 	}
 
 	public String parseGET(Map<String, String> query) {
