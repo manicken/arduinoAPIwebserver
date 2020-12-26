@@ -63,13 +63,23 @@ import com.manicken.IDEhelper;
 import java.awt.Frame;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Example Tools menu entry.
  */
 public class API_WebServer implements Tool {
+	public String thisToolMenuTitle = "API Web Server";
+
+	// settings (theese also defines the default values)
 	boolean debugPrint = false;
 	boolean useSeparateExtensionsMainMenu = true;
+	boolean autoCloseOtherEditor = false;
+	int webServerPort = 8080;
+	int tcdwssPort = 3000;
+	int bddwssPort = 3001;
+	boolean autostart = true;
 
 	ConfigDialog cd = null;
 
@@ -84,13 +94,6 @@ public class API_WebServer implements Tool {
 	public MyWebSocketServer bddwss; // BiDirDataWebSocketServer
 	public MyWebSocketServer tcdwss; // Terminal Capture Data Web Socket Server
 	
-	public String thisToolMenuTitle = "API Web Server";
-
-	int webServerPort = 8080; // replaced by code down
-	int tcdwssPort = 3000;
-	int bddwssPort = 3001;
-	boolean autostart = true; // replaced by code down
-	
 	boolean started = false;
 	
 	public String getMenuTitle() {// required by tool loader
@@ -101,47 +104,15 @@ public class API_WebServer implements Tool {
 		this.editor = editor;
 
 		editor.addWindowListener(new WindowAdapter() {
-			public void windowOpened(WindowEvent e) { init(); }
-		});
-		editor.addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				DisconnectServers();
-				//ShowConfigDialog(); //debug
-			}
-	
+			public void windowOpened(WindowEvent e) {  init(); }
+			public void windowClosed(WindowEvent e) { DisconnectServers(); } // this ensure that Disconnect is done on closed "Editors"
 		});
 		editor.addComponentListener( new ComponentListener() {
 			public void componentResized( ComponentEvent e ) {}
-			public void componentMoved( ComponentEvent e ) {
-				//updateText( jf, jl );
-			}
-			public void componentShown( ComponentEvent e ) {
-				PrintShown();
-			}
-			public void componentHidden( ComponentEvent e ) {
-				DisconnectServers();
-				PrintHidden();
-				
-				
-			}
+			public void componentMoved( ComponentEvent e ) {}
+			public void componentShown( ComponentEvent e ) {}
+			public void componentHidden( ComponentEvent e ) { DisconnectServers(); }
 		} );
-	}
-
-	public void PrintShown()
-	{
-		System.out.println("******************************************");
-		System.out.println("****window shown " + this.editor.getSketch().getName());
-		System.out.println("******************************************");
-	}
-	public void PrintHidden()
-	{
-		System.out.println("******************************************");
-		System.out.println("****window hidden " + this.editor.getSketch().getName());
-		System.out.println("******************************************");
-	}
-
-	public void unload() {
-
 	}
 
 	public void CopyInstances(API_WebServer other)
@@ -159,26 +130,41 @@ public class API_WebServer implements Tool {
 		startWebServer();
 		startBiDirDataWebSocketServer();
 		startTerminalCaptureDataWebSocketServer();
+		OpenPreviousMidi();
 		MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole, ideh.console_stdOutStyle, ideh.console_stdErrStyle, tcdwss);
 	}
 	public void DisconnectServers()
 	{
+		System.err.println("DisconnectServers @ " + editor.getSketch().getName());
 		midi.CloseDevices();
 		// stop BiDirData WebSocketServer
 		try {
-			if (bddwss != null) bddwss.stop(0);
-			System.out.println("BiDirData WebSocket Server was stopped!");
+			if (bddwss != null){ bddwss.stop(0);
+			System.out.println("BiDirData WebSocket Server was stopped!@ " + editor.getSketch().getName());}
 		} catch (Exception e) { System.err.println("cannot stop prev BiDirData WebSocket websocket server!!!"); e.printStackTrace();}
 		// stop Terminal Capture WebSocketServer
 		try {
-			if (tcdwss != null) tcdwss.stop(0);
-			System.out.println("Terminal Capture WebSocket Server was stopped!");
+			if (tcdwss != null){ tcdwss.stop(0);
+			System.out.println("Terminal Capture WebSocket Server was stopped!@ " + editor.getSketch().getName());}
 		} catch (Exception e) { System.err.println("cannot stop prev Terminal Capture websocket server!!!"); e.printStackTrace();}
 		// stop WebServer
 		try {
-			if (webServer != null) webServer.stop(0);
-			System.out.println("web server was stopped!");
+			if (webServer != null){ webServer.stop(0);
+			System.out.println("web server was stopped!@ " + editor.getSketch().getName());}
 		} catch (Exception e) { System.err.println("cannot stop prev web server!!!"); e.printStackTrace();}
+	}
+
+	private void StartServers() {
+		startWebServer();;
+		startBiDirDataWebSocketServer();
+		startTerminalCaptureDataWebSocketServer();
+	}
+	private void OpenPreviousMidi()
+	{
+		String midiInDevice = PreferencesData.get("manicken.apiWebServer.midiInDevice", "");
+		String midiOutDevice = PreferencesData.get("manicken.apiWebServer.midiOutDevice", "");
+		if (midi.OpenDevices(midiInDevice, midiOutDevice))
+			System.out.println(" midi open hurray!");
 	}
 
 	private void startWebServer() {
@@ -216,42 +202,46 @@ public class API_WebServer implements Tool {
 	}
 
 	private void init() {
-		
+		if (PreferencesData.getBoolean("manicken.apiWebServer.DoDisconnectOnOtherEditors", true))
+			IDEhelper.DoDisconnectOnOtherEditors(editor);
+
+		if (PreferencesData.getBoolean("manicken.apiWebServer.closeOtherEditors", autoCloseOtherEditor))
+			IDEhelper.CloseOtherEditors(editor);
+
 		//System.out.println("BaseNoGui.getToolsFolder()=" + BaseNoGui.getToolsFolder());
 		//System.out.println("BaseNoGui.getSketchbookFolder()=" + BaseNoGui.getSketchbookFolder());
-		if (started) {
-			System.out.println("Server is allready running at port " + webServerPort);
-			return;
-		}
+
 		System.out.println("startin API_WebServer ...");
 		try{
 			ideh = new IDEhelper(editor);
-
-			Map<String, Tool> internalToolCache = (Map<String, Tool>)Reflect.GetField("internalToolCache", editor);
-
-			for (String key : internalToolCache.keySet()) {
-				System.out.println("@internalToolCache: " + key);
-			}
-			
 			midi = new MidiHelper((String message) -> {	bddwss.broadcast("midiSend(" + message + ")<br>"); });
 
 			System.out.println("rootDir="+ ideh.GetArduinoRootDir());
 			cm = new CustomMenu(this, editor, thisToolMenuTitle, 
 				new JMenuItem[] {
-					CustomMenu.Item("Start/Restart Servers", event -> run()),
-					CustomMenu.Item("Stop Servers", event -> DisconnectServers()),
+					CustomMenu.Item("Start/Restart", event -> run()),
+					CustomMenu.Item("Stop", event -> DisconnectServers()),
 					CustomMenu.Item("Settings", event -> ShowConfigDialog()),
 					CustomMenu.Item("Start GUI Tool", event -> StartGUItool()),
 					CustomMenu.Item("Init autocomplete", event -> ideh.ActivateAutoCompleteFunctionality())
 				});
 			cm.Init(useSeparateExtensionsMainMenu);
-			ideh.CloseOtherEditors();
-			//ideh.GetPrevInstances(this);
 
-			started = true;
-			
-			ideh.InitCustomKeywords();
 			LoadSettings();
+			if (autostart) {
+				ideh.InitCustomKeywords();
+				Timer timer = new Timer();
+				timer.schedule(new TimerTask(){
+					@Override
+					public void run() {
+						StartServers();
+						OpenPreviousMidi();
+					}
+				}, 1000);
+				//ideh.SystemOutHookStart(terminalCaptureWebSocketServerPort);
+				MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole, ideh.console_stdOutStyle, ideh.console_stdErrStyle, tcdwss);
+				started = true;
+			}
 			
 		} catch (Exception e) {
 			
@@ -260,15 +250,6 @@ public class API_WebServer implements Tool {
 			System.err.println("API_WebServer not started!!!");
 			return;
 		}
-		
-		if (autostart) {
-			startWebServer();
-			startBiDirDataWebSocketServer();
-			startTerminalCaptureDataWebSocketServer();
-			//ideh.SystemOutHookStart(terminalCaptureWebSocketServerPort);
-			MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole, ideh.console_stdOutStyle, ideh.console_stdErrStyle, tcdwss);
-		}
-		//ActivateAutoCompleteFunctionality();
 	}
 
 	public void StartGUItool() {
@@ -295,13 +276,15 @@ public class API_WebServer implements Tool {
 				} 
 			});
 		}
-
+		refreshMidiDevices(); // this starts with list allready populated
 		cd.txtWebServerPort.setText(Integer.toString(webServerPort));
 		cd.txtTermCapWebSocketServerPort.setText(Integer.toString(tcdwssPort));
 		cd.txtBiDirDataWebSocketServerPort.setText(Integer.toString(bddwssPort));
 		cd.chkAutostart.setSelected(autostart);
+		cd.chkAutoCloseOtherEditor.setSelected(autoCloseOtherEditor);
 		cd.chkDebugMode.setSelected(debugPrint);
-		
+		cd.lstMidiDeviceIn.setSelectedIndex(midi.selectedInDeviceIndex);
+		cd.lstMidiDeviceOut.setSelectedIndex(midi.selectedOutDeviceIndex);
 		
 	   int result = JOptionPane.showConfirmDialog(editor, cd, "API Web Server Config" ,JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			
@@ -313,6 +296,8 @@ public class API_WebServer implements Tool {
 			debugPrint = cd.chkDebugMode.isSelected();
 			midi.selectedInDeviceIndex = cd.lstMidiDeviceIn.getSelectedIndex();
 			midi.selectedOutDeviceIndex = cd.lstMidiDeviceOut.getSelectedIndex();
+			autoCloseOtherEditor = cd.chkAutoCloseOtherEditor.isSelected();
+
 			if (midi.OpenDevices())
 				System.out.println("hurray");
 
@@ -326,10 +311,8 @@ public class API_WebServer implements Tool {
 		bddwssPort = PreferencesData.getInteger("manicken.apiWebServer.biDirDataWebSocketServerPort", bddwssPort);
 		autostart =	PreferencesData.getBoolean("manicken.apiWebServer.autostart", autostart);
 		debugPrint = PreferencesData.getBoolean("manicken.apiWebServer.debugPrint", debugPrint);
-		String midiInDevice = PreferencesData.get("manicken.apiWebServer.midiInDevice", "");
-		String midiOutDevice = PreferencesData.get("manicken.apiWebServer.midiOutDevice", "");
-		if (midi.OpenDevices(midiInDevice, midiOutDevice))
-			System.out.println("hurray!");
+		autoCloseOtherEditor = PreferencesData.getBoolean("manicken.apiWebServer.closeOtherEditors", autoCloseOtherEditor);
+		
 	}
 	private void SaveSettings()
 	{
@@ -340,6 +323,7 @@ public class API_WebServer implements Tool {
 		PreferencesData.setBoolean("manicken.apiWebServer.debugPrint", debugPrint);
 		PreferencesData.set("manicken.apiWebServer.midiInDevice", midi.GetCurrentInDeviceNameDescr());
 		PreferencesData.set("manicken.apiWebServer.midiOutDevice", midi.GetCurrentOutDeviceNameDescr());
+		
 	}	
 	private void tcdwss_DecodeRawMessage(String message)
 	{

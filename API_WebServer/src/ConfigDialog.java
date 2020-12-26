@@ -18,6 +18,7 @@ public class ConfigDialog extends JPanel {
     public JLabel lblBiDirDataWebSocketServerPort;
     public JTextField txtBiDirDataWebSocketServerPort;
     public JCheckBox chkAutostart;
+    public JCheckBox chkAutoCloseOtherEditor;
     public JCheckBox chkDebugMode;
     public JLabel lblMidiDeviceIn;
     public JLabel lblMidiDeviceOut;
@@ -37,6 +38,7 @@ public class ConfigDialog extends JPanel {
         lblBiDirDataWebSocketServerPort = new JLabel ("BiDir Data WebSocket Server Port");
         txtBiDirDataWebSocketServerPort = new JTextField (5);
         chkAutostart = new JCheckBox ("Autostart Server at Arduino IDE start");
+        chkAutoCloseOtherEditor = new JCheckBox ("Autoclose other editor window when new is opened");
         chkDebugMode = new JCheckBox ("Activates some debug output");
         lblMidiDeviceIn = new JLabel ("Input Devices");
         lblMidiDeviceOut = new JLabel ("Output Devices");
@@ -56,6 +58,7 @@ public class ConfigDialog extends JPanel {
         add (lblBiDirDataWebSocketServerPort);
         add (txtBiDirDataWebSocketServerPort);
         add (chkAutostart);
+        add (chkAutoCloseOtherEditor);
         add (chkDebugMode);
         add (lblMidiDeviceIn);
         add (lblMidiDeviceOut);
@@ -70,8 +73,9 @@ public class ConfigDialog extends JPanel {
         txtWebServerPort.setBounds (5, 5, 50, 25);
         lblBiDirDataWebSocketServerPort.setBounds (60, 65, 205, 25);
         txtBiDirDataWebSocketServerPort.setBounds (5, 65, 50, 25);
-        chkAutostart.setBounds (5, 100, 245, 25);
-        chkDebugMode.setBounds (5, 130, 195, 20);
+        chkAutostart.setBounds (5, 100, 245, 20);
+        chkAutoCloseOtherEditor.setBounds (5, 120, 300, 20);
+        chkDebugMode.setBounds (5, 140, 195, 20);
         lblMidiDeviceIn.setBounds(5, 205, 200, 25);
         lstMidiDeviceIn.setBounds (5, 230, 200, 355);
         lblMidiDeviceOut.setBounds(210, 205, 200, 25);

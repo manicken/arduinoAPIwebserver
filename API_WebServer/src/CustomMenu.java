@@ -17,8 +17,6 @@ import javax.swing.MenuElement;
 import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.Reflect;
-import com.manicken.ToolJMenu;
-
 
 public class CustomMenu {
 
@@ -53,25 +51,19 @@ public class CustomMenu {
 			initAtSeparateExtensionsMenu();
 		else
 			initAtToolsMenu();
-		
 	}
-
 
 	private void initAtSeparateExtensionsMenu()
 	{
 		int existingExtensionsMenuIndex = GetMenuBarItemIndex(menubar, tr("Extensions"));
 		int toolsMenuIndex = GetMenuBarItemIndex(menubar, tr("Tools"));
 		
-
 		if (existingExtensionsMenuIndex == -1)
 			extensionsMenu = new JMenu(tr("Extensions"));//
 		else
 			extensionsMenu = (JMenu)menubar.getSubElements()[existingExtensionsMenuIndex];
 
-		
-
-		ToolJMenu thisToolMenu = new ToolJMenu(toolMenuTitle, tool);	
-
+		JMenu thisToolMenu = new JMenu(toolMenuTitle);	
 
 		if (existingExtensionsMenuIndex == -1)
 			menubar.add(extensionsMenu, toolsMenuIndex+1);
@@ -89,7 +81,7 @@ public class CustomMenu {
 	private void initAtToolsMenu()
 	{
 		int thisToolIndex = GetMenuItemIndex(toolsMenu, toolMenuTitle);
-		ToolJMenu thisToolMenu = new ToolJMenu(toolMenuTitle, tool);
+		JMenu thisToolMenu = new JMenu(toolMenuTitle);
 
 		// create new special menu
 		CreatePluginMenu(thisToolMenu);
@@ -98,7 +90,7 @@ public class CustomMenu {
 		toolsMenu.insert(thisToolMenu, thisToolIndex);
 	}
 
-	private void CreatePluginMenu(ToolJMenu thisToolMenu)
+	private void CreatePluginMenu(JMenu thisToolMenu)
 	{
 		for (int i = 0; i < items.length; i++)
 		{
