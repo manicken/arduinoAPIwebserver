@@ -1,0 +1,10 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "g:\\arduino-1.8.13\\lib\\arduino-core.jar",
+        "g:\\arduino-1.8.13\\lib\\pde.jar",
+        "API_WebServer/tool/autocomplete-3.0.4.jar",
+        "API_WebServer/tool/Java-WebSocket-1.5.1.jar",
+        "API_WebServer/tool/json-20200518.jar"
+    ]
+}

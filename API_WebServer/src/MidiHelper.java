@@ -134,6 +134,17 @@ public class MidiHelper {
         }
         return anyOpen;
     }
+    public void CloseDevices()
+    {
+        try{
+            if (inDevice != null)
+            inDevice.close();
+        }catch (Exception e) { }
+        try{
+            if (outDevice != null)
+            outDevice.close();
+        }catch (Exception e) { }
+    }
     public boolean IsInDevice(MidiDevice.Info device)
     {
         try {

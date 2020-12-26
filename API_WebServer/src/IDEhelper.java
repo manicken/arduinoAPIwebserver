@@ -30,8 +30,15 @@ import processing.app.EditorConsole;
 import processing.app.syntax.PdeKeywords;
 
 import org.json.*;
+
+//import jdk.tools.jlink.internal.JmodArchive;
+
+//import jdk.javadoc.internal.tool.ToolOption;
+
 import java.util.List;
+import java.util.Map;
 import javax.swing.JMenuBar;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.MenuElement;
 
@@ -39,7 +46,9 @@ import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.MyConsoleOutputStream;
 import com.manicken.MyWebSocketServer;
+import com.manicken.Reflect;
 import com.manicken.CustomMenu;
+import com.manicken.ToolJMenu;
 
 public class IDEhelper {
 
@@ -88,14 +97,48 @@ public class IDEhelper {
 
 		
 	}
-
-	public void GetPrevInstances()
+	public void CloseOtherEditors()
+	{
+		List<Editor> editors = base.getEditors();
+		boolean anyStopped = false;
+		for (int i = 0; i < editors.size(); i++)
+		{
+			if (this.editor == editors.get(i))
+			{
+				//System.err.println("skipping Editor (because is same): " + editors.get(i).getSketch().getName());
+				continue;
+			}
+			//editors.get(i).setVisible(false);
+			//try {Thread.sleep(1000);} catch (Exception ex) {}
+			//editors.get(i).setVisible(true);
+			base.handleClose(editors.get(i)); // close other
+			//try {Thread.sleep(1000);} catch (Exception ex) {}
+		}
+			
+	}
+	public void GetPrevInstances(API_WebServer thisAPI_WebServer)
 	{
 		List<Editor> editors = base.getEditors();
 
 		for (int i = 0; i < editors.size(); i++)
 		{
-			System.out.println("Editor: " + i);
+			if (this.editor == editors.get(i))
+			{
+				//System.err.println("skipping Editor (because is same): " + editors.get(i).getSketch().getName());
+				continue;
+			}
+			base.handleClose(editors.get(i)); // close other
+
+			/*try {
+				Tool tool = internalToolCache.get(thisAPI_WebServer.getClass().getName());
+				API_WebServer apiws = (API_WebServer)tool;
+				apiws.DisconnectServers();
+				System.out.println("other extension: " + apiws.thisToolMenuTitle);
+
+			}catch (Exception e) {e.printStackTrace();}
+*/
+			
+			/*
 			JMenuBar menubar = editors.get(i).getJMenuBar();
 			int existingExtensionsMenuIndex = CustomMenu.GetMenuBarItemIndex(menubar, tr("Extensions"));
 			if (existingExtensionsMenuIndex == -1) continue;
@@ -106,16 +149,33 @@ public class IDEhelper {
 			for (int ei = 0; ei < itemCount; ei++)
 			{
 				JMenuItem jmenuitem = extensionsMenu.getItem(ei);
-				System.out.println("extension: " + jmenuitem.getText());
+				
+				if (!jmenuitem.getClass().getName().equals(ToolJMenu.class.getName()))
+				{
+					//System.err.println("skipping extension (because it don't use ToolJMenu): " + jmenuitem.getText());
+					continue;
+				}
+				
 				ToolJMenu item;
 				try {
-					item = (ToolJMenu)jmenuitem;//
+					JMenu jMenu = (javax.swing.JMenu)jmenuitem;
+					item = ToolJMenu.class.cast(jMenu);
+				}catch (Exception e) {System.err.println("cannot cast " + jmenuitem.getText() + " because JAVA is absolutely RETARDED stupid"); e.printStackTrace(); continue; }
+				
+				try {
+					System.err.println("extension type: " + item.tool.getClass().getName());
+
 					API_WebServer apiws = (API_WebServer)item.tool;
 
-					System.out.println("apiws: " + apiws.thisToolMenuTitle);
-					apiws.DisconnectServers();
-				}catch (Exception e) { }
-			}
+					System.out.println("copy instances from " + thisAPI_WebServer.editor.getSketch().getName() + " to " + apiws.editor.getSketch().getName());
+
+					apiws.CopyInstances(thisAPI_WebServer);
+					System.err.println("apiws: " + apiws.thisToolMenuTitle + " " + apiws.instanceIndex);
+					//apiws.DisconnectServers();
+					
+
+				}catch (Exception e) {System.err.println("cannot cast because java is retarded: " + jmenuitem.getText()); e.printStackTrace(); }
+			}*/
 		}
 	}
 

@@ -21,7 +21,7 @@ public class MyConsoleOutputStream extends ByteArrayOutputStream {
 	private volatile EditorConsole editorConsole;
 	private volatile boolean newLinePrinted;
 
-	private static MyWebSocketServer mwss;
+	public MyWebSocketServer mwss;
 	Color fgColor;
 	String fgColorHex;
 	Color bgColor;
@@ -30,25 +30,8 @@ public class MyConsoleOutputStream extends ByteArrayOutputStream {
 	private static MyConsoleOutputStream out;
 	private static MyConsoleOutputStream err;
 
-	public static void DisconnectWebsocketServer()
-	{
-		try {
-			if (mwss != null) mwss.stop();
-			System.out.println("terminal capture websocket server was stopped!");
-		} catch (Exception e) { System.err.println("cannot stop prev websocket server!!!"); e.printStackTrace();}
-	}
-	public static void setCurrentEditorConsole(EditorConsole editorConsole, SimpleAttributeSet console_stdOutStyle, SimpleAttributeSet console_stdErrStyle, int webSocketServerPort) {
-		try {
-			if (mwss != null) mwss.stop();
-		} catch (Exception e) { System.err.println("cannot stop prev websocket server!!!"); e.printStackTrace();}
-		try {
-
-			mwss = new MyWebSocketServer(webSocketServerPort);
-			mwss.start();
-		} catch (Exception e) { System.err.println("cannot start redirect websocket server!!!"); e.printStackTrace(); mwss = null; return; }
-
-
-		
+	public static void setCurrentEditorConsole(EditorConsole editorConsole, SimpleAttributeSet console_stdOutStyle, SimpleAttributeSet console_stdErrStyle, MyWebSocketServer mwss) {
+				
 		if (out == null) {
 		  out = new MyConsoleOutputStream(console_stdOutStyle, System.out, mwss);
 		  System.setOut(new PrintStream(out, true));

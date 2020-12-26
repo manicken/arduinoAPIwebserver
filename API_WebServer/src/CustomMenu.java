@@ -17,21 +17,8 @@ import javax.swing.MenuElement;
 import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.Reflect;
+import com.manicken.ToolJMenu;
 
-class ToolJMenu extends javax.swing.JMenu
-{
-	/**
-	 *
-	 */
-	private static final long serialVersionUID = 1L;
-	public Tool tool = null;
-
-	public ToolJMenu(String title, Tool tool)
-	{
-		super(title);
-		this.tool = tool;
-	}
-}
 
 public class CustomMenu {
 
