@@ -48,6 +48,7 @@ import processing.app.BaseNoGui;
 import processing.app.Editor;
 import processing.app.tools.Tool;
 import processing.app.PreferencesData;
+import processing.app.SerialPlotter;
 
 import org.json.*;
 
@@ -81,6 +82,7 @@ public class API_WebServer implements Tool {
 	int tcdwssPort = 3000;
 	int bddwssPort = 3001;
 	boolean autostart = true;
+	boolean autoConvertMainCppToSketchMainIno  = true;
 
 	ConfigDialog cd = null;
 
@@ -224,7 +226,8 @@ public class API_WebServer implements Tool {
 					CustomMenu.Item("Stop", event -> DisconnectServers()),
 					CustomMenu.Item("Settings", event -> ShowConfigDialog()),
 					CustomMenu.Item("Start GUI Tool", event -> StartGUItool()),
-					CustomMenu.Item("Init autocomplete", event -> ideh.ActivateAutoCompleteFunctionality())
+					CustomMenu.Item("Init autocomplete", event -> ideh.ActivateAutoCompleteFunctionality()),
+					CustomMenu.Item("test set plotter bg", event -> TestSetPlotterBG())
 				});
 			cm.Init(useSeparateExtensionsMainMenu);
 
@@ -252,7 +255,17 @@ public class API_WebServer implements Tool {
 			return;
 		}
 	}
-
+	void TestSetPlotterBG()
+	{
+		processing.app.SerialPlotter plotter = (processing.app.SerialPlotter)Reflect.GetField("serialPlotter", editor);
+		try {
+			plotter.add(new javax.swing.JLabel(new javax.swing.ImageIcon(javax.imageio.ImageIO.read(new java.io.File("C:\\Users\\tde04\\Desktop\\till PJRC forum\\1200px-Clipping.svg.png")))));
+		} catch (java.io.IOException e) {
+			e.printStackTrace();
+		}
+		plotter.pack();
+		plotter.setVisible(true);
+	}
 	public void StartGUItool() {
 		try {
 			File htmlFile = new File(ideh.GetArduinoRootDir() + "/hardware/teensy/avr/libraries/Audio/gui/index.html");
@@ -283,6 +296,7 @@ public class API_WebServer implements Tool {
 		cd.txtBiDirDataWebSocketServerPort.setText(Integer.toString(bddwssPort));
 		cd.chkAutostart.setSelected(autostart);
 		cd.chkAutoCloseOtherEditor.setSelected(autoCloseOtherEditor);
+		cd.chkAutoConvertMainCppToSketchMainIno.setSelected(autoConvertMainCppToSketchMainIno);
 		cd.chkDebugMode.setSelected(debugPrint);
 		cd.lstMidiDeviceIn.setSelectedIndex(midi.selectedInDeviceIndex);
 		cd.lstMidiDeviceOut.setSelectedIndex(midi.selectedOutDeviceIndex);
@@ -298,6 +312,7 @@ public class API_WebServer implements Tool {
 			midi.selectedInDeviceIndex = cd.lstMidiDeviceIn.getSelectedIndex();
 			midi.selectedOutDeviceIndex = cd.lstMidiDeviceOut.getSelectedIndex();
 			autoCloseOtherEditor = cd.chkAutoCloseOtherEditor.isSelected();
+			autoConvertMainCppToSketchMainIno = cd.chkAutoConvertMainCppToSketchMainIno.isSelected();
 
 			if (midi.OpenDevices())
 				System.out.println("hurray");
@@ -313,7 +328,7 @@ public class API_WebServer implements Tool {
 		autostart =	PreferencesData.getBoolean("manicken.apiWebServer.autostart", autostart);
 		debugPrint = PreferencesData.getBoolean("manicken.apiWebServer.debugPrint", debugPrint);
 		autoCloseOtherEditor = PreferencesData.getBoolean("manicken.apiWebServer.closeOtherEditors", autoCloseOtherEditor);
-		
+		autoConvertMainCppToSketchMainIno = PreferencesData.getBoolean("manicken.apiWebServer.autoConvertMainCppToSketchMainIno", autoConvertMainCppToSketchMainIno);
 	}
 	private void SaveSettings()
 	{
@@ -322,6 +337,7 @@ public class API_WebServer implements Tool {
 		PreferencesData.setInteger("manicken.apiWebServer.biDirDataWebSocketServerPort", bddwssPort);
 		PreferencesData.setBoolean("manicken.apiWebServer.autostart", autostart);
 		PreferencesData.setBoolean("manicken.apiWebServer.debugPrint", debugPrint);
+		PreferencesData.setBoolean("manicken.apiWebServer.autoConvertMainCppToSketchMainIno", autoConvertMainCppToSketchMainIno);
 		PreferencesData.set("manicken.apiWebServer.midiInDevice", midi.GetCurrentInDeviceNameDescr());
 		PreferencesData.set("manicken.apiWebServer.midiOutDevice", midi.GetCurrentOutDeviceNameDescr());
 		
@@ -494,7 +510,7 @@ public class API_WebServer implements Tool {
 		try { arrKeywords = jsonObj.getJSONArray("keywords"); } catch (Exception e) { returnStr += " >>>warning: keywords array missing in JSON<<< "; if (debugPrint)e.printStackTrace();}
 		
 		if (removeOtherFiles)
-		ideh.RemoveFilesNotInJSON(arrFiles);
+		ideh.RemoveFilesNotInJSON(arrFiles, autoConvertMainCppToSketchMainIno);
 
 		if (arrFiles != null)
 			returnStr += parsePOST_JSONfiles(arrFiles);
@@ -516,9 +532,17 @@ public class API_WebServer implements Tool {
 			JSONObject file = arrFiles.getJSONObject(i);
 			String name = "";
 			String contents = "";
+			Boolean OverwriteFile = false;
+			try { OverwriteFile = file.getBoolean("overwrite_file"); } catch (Exception e) { returnStr += " >>>error: fileObject don't contain overwrite_file<<< ";if (debugPrint)e.printStackTrace(); continue; }
+			
+			if (OverwriteFile == false) continue;
+			
 			try { name = file.getString("name"); } catch (Exception e) { returnStr += " >>>error: fileObject don't contain name<<< ";if (debugPrint)e.printStackTrace(); continue; }
 			try { contents = file.getString("contents"); } catch (Exception e) { returnStr += " >>>error: fileObject don't contain contents<<< ";if (debugPrint)e.printStackTrace(); continue; }
 			
+			if (autoConvertMainCppToSketchMainIno && name.toLowerCase().equals("main.cpp"))
+				name = editor.getSketch().getName() + ".ino";
+
 			if (name.endsWith(".cpp") || name.endsWith(".c") || name.endsWith(".h") || name.endsWith(".hpp") || name.endsWith(".ino"))
 				ideh.addNewFile(name, contents); // adds a new file to the sketch-project
 			else

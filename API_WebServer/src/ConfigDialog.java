@@ -17,6 +17,7 @@ public class ConfigDialog extends JPanel {
     public JTextField txtWebServerPort;
     public JLabel lblBiDirDataWebSocketServerPort;
     public JTextField txtBiDirDataWebSocketServerPort;
+    public JCheckBox chkAutoConvertMainCppToSketchMainIno;
     public JCheckBox chkAutostart;
     public JCheckBox chkAutoCloseOtherEditor;
     public JCheckBox chkDebugMode;
@@ -37,6 +38,7 @@ public class ConfigDialog extends JPanel {
         txtWebServerPort = new JTextField (5);
         lblBiDirDataWebSocketServerPort = new JLabel ("BiDir Data WebSocket Server Port");
         txtBiDirDataWebSocketServerPort = new JTextField (5);
+        chkAutoConvertMainCppToSketchMainIno = new JCheckBox ("AutoConvert \"imported\" main.cpp To \"Sketch Name\".ino");
         chkAutostart = new JCheckBox ("Autostart Server at Arduino IDE start");
         chkAutoCloseOtherEditor = new JCheckBox ("Autoclose other editor window when new is opened");
         chkDebugMode = new JCheckBox ("Activates some debug output");
@@ -57,6 +59,7 @@ public class ConfigDialog extends JPanel {
         add (txtWebServerPort);
         add (lblBiDirDataWebSocketServerPort);
         add (txtBiDirDataWebSocketServerPort);
+        add (chkAutoConvertMainCppToSketchMainIno);
         add (chkAutostart);
         add (chkAutoCloseOtherEditor);
         add (chkDebugMode);
@@ -73,9 +76,10 @@ public class ConfigDialog extends JPanel {
         txtWebServerPort.setBounds (5, 5, 50, 25);
         lblBiDirDataWebSocketServerPort.setBounds (60, 65, 205, 25);
         txtBiDirDataWebSocketServerPort.setBounds (5, 65, 50, 25);
-        chkAutostart.setBounds (5, 100, 245, 20);
-        chkAutoCloseOtherEditor.setBounds (5, 120, 300, 20);
-        chkDebugMode.setBounds (5, 140, 195, 20);
+        chkAutoConvertMainCppToSketchMainIno.setBounds (5, 90, 300, 20);
+        chkAutostart.setBounds (5, 110, 245, 20);
+        chkAutoCloseOtherEditor.setBounds (5, 130, 300, 20);
+        chkDebugMode.setBounds (5, 150, 195, 20);
         lblMidiDeviceIn.setBounds(5, 205, 200, 25);
         lstMidiDeviceIn.setBounds (5, 230, 200, 355);
         lblMidiDeviceOut.setBounds(210, 205, 200, 25);

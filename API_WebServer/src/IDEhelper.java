@@ -264,7 +264,7 @@ public class IDEhelper {
         } catch (IOException e) { e.printStackTrace(); }
 	}
 	
-	public void RemoveFilesNotInJSON(JSONArray arr) {
+	public void RemoveFilesNotInJSON(JSONArray arr, boolean autoConvertMainCppToSketchMainIno) {
 		try {
 			System.out.println("RemoveFilesNotInJSON");
 			ArrayList<String> filesToRemove = new ArrayList<String>();
@@ -277,7 +277,7 @@ public class IDEhelper {
 				if (sf.isPrimary()) continue; // never remove primary sketch ino file
 				
 				String fileName = sf.getFileName();
-				if (!CheckIfFileExistsInJsonArray(fileName, arr))
+				if (!CheckIfFileExistsInJsonArray(fileName, arr, autoConvertMainCppToSketchMainIno))
 					filesToRemove.add(fileName); // store it for later
 			}
 			// now it can remove files 
@@ -289,11 +289,14 @@ public class IDEhelper {
 		} catch (Exception e) { e.printStackTrace(); }
 	}
 
-	public boolean CheckIfFileExistsInJsonArray(String fileName, JSONArray arr) {
+	public boolean CheckIfFileExistsInJsonArray(String fileName, JSONArray arr, boolean autoConvertMainCppToSketchMainIno) {
 		//System.out.println("CheckIfFileExistsInJsonArray:" + fileName);
 		for (int i = 0; i < arr.length(); i++) {
 			JSONObject e = arr.getJSONObject(i);
 			String name = e.getString("name");
+
+			if (autoConvertMainCppToSketchMainIno && name.toLowerCase().equals("main.cpp"))
+				name = editor.getSketch().getName() + ".ino";
 			//System.out.println("against: " + name);
 			if (name.equals(fileName))
 				return true;
