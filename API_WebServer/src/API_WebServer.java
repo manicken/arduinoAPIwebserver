@@ -62,6 +62,8 @@ import com.manicken.Reflect;
 import com.manicken.CustomMenu;
 import com.manicken.IDEhelper;
 
+import com.manicken.MidiWebSocketBridge;
+
 import java.awt.Frame;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -92,9 +94,11 @@ public class API_WebServer implements Tool {
 	IDEhelper ideh;
 
 	public int instanceIndex = 0;
-	public MidiHelper midi;
+	
 	public HttpServer webServer;
-	public MyWebSocketServer bddwss; // BiDirDataWebSocketServer
+
+	public MidiWebSocketBridge mwsb;
+
 	public MyWebSocketServer tcdwss; // Terminal Capture Data Web Socket Server
 	
 	boolean started = false;
@@ -118,20 +122,11 @@ public class API_WebServer implements Tool {
 		} );
 	}
 
-	public void CopyInstances(API_WebServer other)
-	{
-		other.webServer = this.webServer;
-		other.bddwss = this.bddwss;
-		other.tcdwss = this.tcdwss;
-		other.midi = this.midi;
-		other.instanceIndex = this.instanceIndex + 1;
-	}
-
 	public void run() { // required by tool loader
 		
 		LoadSettings();
 		startWebServer();
-		startBiDirDataWebSocketServer();
+		mwsb.startBridge(bddwssPort);
 		startTerminalCaptureDataWebSocketServer();
 		OpenPreviousMidi();
 		MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole, ideh.console_stdOutStyle, ideh.console_stdErrStyle, tcdwss);
@@ -139,12 +134,9 @@ public class API_WebServer implements Tool {
 	public void DisconnectServers()
 	{
 		System.err.println("DisconnectServers @ " + editor.getSketch().getName());
-		midi.CloseDevices();
-		// stop BiDirData WebSocketServer
-		try {
-			if (bddwss != null){ bddwss.stop(0);
-			System.out.println("BiDirData WebSocket Server was stopped!@ " + editor.getSketch().getName());}
-		} catch (Exception e) { System.err.println("cannot stop prev BiDirData WebSocket websocket server!!!"); e.printStackTrace();}
+		if (mwsb.stopBridge())
+		System.err.println(" @" + editor.getSketch().getName());
+
 		// stop Terminal Capture WebSocketServer
 		try {
 			if (tcdwss != null){ tcdwss.stop(0);
@@ -159,14 +151,14 @@ public class API_WebServer implements Tool {
 
 	private void StartServers() {
 		startWebServer();;
-		startBiDirDataWebSocketServer();
+		mwsb.startBridge(bddwssPort);
 		startTerminalCaptureDataWebSocketServer();
 	}
 	private void OpenPreviousMidi()
 	{
 		String midiInDevice = PreferencesData.get("manicken.apiWebServer.midiInDevice", "");
 		String midiOutDevice = PreferencesData.get("manicken.apiWebServer.midiOutDevice", "");
-		if (midi.OpenDevices(midiInDevice, midiOutDevice))
+		if (mwsb.midi.OpenDevices(midiInDevice, midiOutDevice))
 			System.out.println(" midi open hurray!");
 	}
 
@@ -181,16 +173,6 @@ public class API_WebServer implements Tool {
 
 			System.out.println(" Web Server started on port " + webServerPort);
 		} catch (Exception e) { System.err.println("cannot start web server!!!"); e.printStackTrace(); }
-	}
-
-	public void startBiDirDataWebSocketServer() {
-		try {
-			if (bddwss != null) bddwss.stop(0);
-		} catch (Exception e) { System.err.println("cannot stop prev BiDirData websocket server!!!"); e.printStackTrace();}
-		try {
-			bddwss = new MyWebSocketServer(bddwssPort, (String message) -> bddwss_DecodeRawMessage(message));
-			bddwss.start();
-		} catch (Exception e) { System.err.println("cannot start bidirdata websocket server!!!"); e.printStackTrace(); }
 	}
 
 	public void startTerminalCaptureDataWebSocketServer() {
@@ -217,7 +199,8 @@ public class API_WebServer implements Tool {
 		System.out.println("startin API_WebServer ...");
 		try{
 			ideh = new IDEhelper(editor);
-			midi = new MidiHelper((String message) -> {	bddwss.broadcast("midiSend(" + message + ")<br>"); });
+			mwsb = new MidiWebSocketBridge();
+			
 
 			System.out.println("rootDir="+ ideh.GetArduinoRootDir());
 			cm = new CustomMenu(this, editor, thisToolMenuTitle, 
@@ -277,8 +260,8 @@ public class API_WebServer implements Tool {
 	private void refreshMidiDevices()
 	{
 		//cd.lstMidiDevices.clear();
-		cd.lstMidiDeviceIn.setListData(midi.GetInDeviceList());
-		cd.lstMidiDeviceOut.setListData(midi.GetOutDeviceList());
+		cd.lstMidiDeviceIn.setListData(mwsb.midi.GetInDeviceList());
+		cd.lstMidiDeviceOut.setListData(mwsb.midi.GetOutDeviceList());
 	}
 	public void ShowConfigDialog() {
 		if (cd == null)
@@ -298,8 +281,8 @@ public class API_WebServer implements Tool {
 		cd.chkAutoCloseOtherEditor.setSelected(autoCloseOtherEditor);
 		cd.chkAutoConvertMainCppToSketchMainIno.setSelected(autoConvertMainCppToSketchMainIno);
 		cd.chkDebugMode.setSelected(debugPrint);
-		cd.lstMidiDeviceIn.setSelectedIndex(midi.selectedInDeviceIndex);
-		cd.lstMidiDeviceOut.setSelectedIndex(midi.selectedOutDeviceIndex);
+		cd.lstMidiDeviceIn.setSelectedIndex(mwsb.midi.selectedInDeviceIndex);
+		cd.lstMidiDeviceOut.setSelectedIndex(mwsb.midi.selectedOutDeviceIndex);
 		
 	   int result = JOptionPane.showConfirmDialog(editor, cd, "API Web Server Config" ,JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			
@@ -309,12 +292,12 @@ public class API_WebServer implements Tool {
 			bddwssPort = Integer.parseInt(cd.txtBiDirDataWebSocketServerPort.getText());
 			autostart = cd.chkAutostart.isSelected();
 			debugPrint = cd.chkDebugMode.isSelected();
-			midi.selectedInDeviceIndex = cd.lstMidiDeviceIn.getSelectedIndex();
-			midi.selectedOutDeviceIndex = cd.lstMidiDeviceOut.getSelectedIndex();
+			mwsb.midi.selectedInDeviceIndex = cd.lstMidiDeviceIn.getSelectedIndex();
+			mwsb.midi.selectedOutDeviceIndex = cd.lstMidiDeviceOut.getSelectedIndex();
 			autoCloseOtherEditor = cd.chkAutoCloseOtherEditor.isSelected();
 			autoConvertMainCppToSketchMainIno = cd.chkAutoConvertMainCppToSketchMainIno.isSelected();
 
-			if (midi.OpenDevices())
+			if (mwsb.midi.OpenDevices())
 				System.out.println("hurray");
 
 			SaveSettings();
@@ -338,117 +321,13 @@ public class API_WebServer implements Tool {
 		PreferencesData.setBoolean("manicken.apiWebServer.autostart", autostart);
 		PreferencesData.setBoolean("manicken.apiWebServer.debugPrint", debugPrint);
 		PreferencesData.setBoolean("manicken.apiWebServer.autoConvertMainCppToSketchMainIno", autoConvertMainCppToSketchMainIno);
-		PreferencesData.set("manicken.apiWebServer.midiInDevice", midi.GetCurrentInDeviceNameDescr());
-		PreferencesData.set("manicken.apiWebServer.midiOutDevice", midi.GetCurrentOutDeviceNameDescr());
+		PreferencesData.set("manicken.apiWebServer.midiInDevice", mwsb.midi.GetCurrentInDeviceNameDescr());
+		PreferencesData.set("manicken.apiWebServer.midiOutDevice", mwsb.midi.GetCurrentOutDeviceNameDescr());
 		
 	}	
 	private void tcdwss_DecodeRawMessage(String message)
 	{
 		System.out.println("terminalCaptureWebSocketServerData : " + message);
-	}
-	private void bddwss_DecodeRawMessage(String message)
-	{
-		message = message.toLowerCase();
-		if (message.startsWith("midisend")) // most common check first
-			bddwss_DecodeMidiMessage(message);			
-		else if (message.equals("midigetdevices"))
-			bddwss_GetMidiDevices();
-		else if (message.startsWith("midisetdevice"))
-			bddwss_SetMidiDevice(message.substring("midisetdevice".length()));
-		else
-			System.out.println("biDirDataWebSocketServerData unknown command: " + message);
-	}
-	private String GetSubStringBetween(String in, String startToken, String endToken)
-	{
-		int beginIndex = in.indexOf("(");
-		if (beginIndex == -1) { return null; }
-		int endIndex = in.indexOf(")");
-		if (endIndex == -1) { return null; }
-		return in.substring(beginIndex+1, endIndex);
-	}
-	private void bddwss_DecodeMidiMessage(String message)
-	{
-		message = GetSubStringBetween(message, "(", ")");
-		if (message == null)
-		{
-			bddwss.broadcast("err. midi send missing (first or last) parantesis");
-			return; 
-		}
-		System.out.println("midisend " + message);
-		String[] params = message.split(",");
-		if (params.length != 3) {bddwss.broadcast("err. midi send params.length != 3"); return;}
-		int[] intParams = new int[params.length];
-		for (int i = 0; i < 3; i++)
-		{
-			params[i] = params[i].trim();
-			if (params[i].startsWith("0x"))
-			{
-				params[i] = params[i].substring(2);
-				intParams[i] = Integer.parseInt(params[i], 16);
-			}
-			else
-			{
-				intParams[i] = Integer.parseInt(params[i]);
-			}
-			//System.out.println("midisend byte" + i + ":" + intParams[i]);
-		}
-		midi.Send(intParams);
-	}
-	private void bddwss_GetMidiDevices()
-	{
-		String[] inDev = midi.GetInDeviceList();
-		String[] outDev = midi.GetOutDeviceList();
-
-		StringBuilder sb = new StringBuilder();
-		sb.append("midiDevicesIn(");
-		for (int i = 0; i < inDev.length; i++)
-		{
-			sb.append(inDev[i]);
-			if (i < inDev.length -1)
-				sb.append("\t");
-		}
-		sb.append(")["+midi.selectedInDeviceIndex+"]\n");
-		bddwss.broadcast(sb.toString());
-		
-		sb = new StringBuilder();
-		sb.append("midiDevicesOut(");
-		for (int i = 0; i < outDev.length; i++)
-		{
-			sb.append(outDev[i]);
-			if (i < outDev.length -1)
-				sb.append("\t");
-		}
-		sb.append(")["+midi.selectedOutDeviceIndex+"]\n");
-		bddwss.broadcast(sb.toString());
-	}
-	private void bddwss_SetMidiDevice(String message)
-	{
-		String param = GetSubStringBetween(message, "(", ")");
-		if (param == null)
-		{
-			bddwss.broadcast("err. midi set device missing (first or last) parantesis");
-			return; 
-		}
-		int index = 0;
-		try {index = Integer.parseInt(param);} catch (Exception ex) {bddwss.broadcast("err. midi set device index is not a integer"); return;}
-
-		if (message.startsWith("in"))
-		{
-			midi.selectedInDeviceIndex = index;
-			if (midi.OpenInDevice())
-				System.out.println("Input: " + midi.inDevice.getDeviceInfo()+" Was Opened");
-		}
-		else if (message.startsWith("out"))
-		{
-			midi.selectedOutDeviceIndex = index;
-			if (midi.OpenOutDevice())
-				System.out.println("Output: " + midi.outDevice.getDeviceInfo()+" Was Opened");
-		}
-		else
-		{
-			bddwss.broadcast("err. midi set device - missing 'in' or 'out'");
-			return;
-		}
 	}
 
 	public String parseGET(Map<String, String> query) {
@@ -574,4 +453,5 @@ public class API_WebServer implements Tool {
 			ideh.setFile(ideh.sketchKeywordsTempFileName, sbKeywordsContents);
 		return returnStr;
 	}
+	
 }

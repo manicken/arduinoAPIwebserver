@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Main-Class: com.manicken.Main
+Class-Path: Java-WebSocket-1.5.1.jar
