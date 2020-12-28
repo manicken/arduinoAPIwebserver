@@ -1,6 +1,6 @@
 
 arduinoInstallDir=~/arduino-1.8.13
-arduinoInstallDir2=~/arduino-1.8.12
+arduinoSketchbookDir=~/Arduino/ArduinoSketchbook
 
 function cleanPrevBinFiles {
     cd ./bin
@@ -15,18 +15,17 @@ function compile {
 }
 
 function makeJar {
+	copy MANIFEST.MF bin\MANIFEST.MF
     cd bin
-    jar cvf API_WebServer.jar *
+    jar cmf MANIFEST.MF API_WebServer.jar *
     cd ..
 }
 
 function copyfiles {
     cp ./bin/API_WebServer.jar ./tool/API_WebServer.jar
-    cp -r ./tool/* $arduinoInstallDir/tools/API_WebServer/tool
-    cp -r ./src/* $arduinoInstallDir/tools/API_WebServer/src
+    cp -r ./tool/* $arduinoSketchbookDir/tools/API_WebServer/tool
+    cp -r ./src/* $arduinoSketchbookDir/tools/API_WebServer/src
 
-    cp -r ./tool/* $arduinoInstallDir2/tools/API_WebServer/tool
-    cp -r ./src/* $arduinoInstallDir2/tools/API_WebServer/src
     echo ***************
     echo *** Success ***
     echo ***************

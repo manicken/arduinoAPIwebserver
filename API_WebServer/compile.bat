@@ -10,9 +10,9 @@ javac -cp "%arduinoInstallDir%\lib\pde.jar;%arduinoInstallDir%\lib\arduino-core.
 if errorlevel 1 goto compileError
 copy MANIFEST.MF bin\MANIFEST.MF
 cd bin
-echo ***************
+echo ******************
 echo *** adding jar ***
-echo ***************
+echo ******************
 jar cmf MANIFEST.MF API_WebServer.jar *
 cd..
 echo *********************
