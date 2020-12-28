@@ -109,10 +109,12 @@ http://localhost:8080?cmd=ping
 Just as the title say, it's a WebSocket Server that is bridged with midi input and output devices<br>
 (all received commands are converted to lowercase before parsing)<br>
 accepts the following commands: <br>
-midisend(0x90, 60, 0x3F)  the parameters can be mixed hexadecimal (0x) & decimal<br>
-midigetdevices   this sends back two messages: midiDevicesIn("device1", "device2", "device3) and midiDevicesOut("device1", "device2", "device3)<br>
-midisetdevicein(0)  sets and connects the in device with index 0<br>
-midisetdeviceout(0)  sets and connects the out device with index 0<br>
+* midisend(0x90, 60, 0x3F)&nbsp;&nbsp;&nbsp;&nbsp;the parameters can be mixed hexadecimal (0x) & decimal<br>
+* midigetdevices&nbsp;&nbsp;&nbsp;&nbsp;this sends back two messages:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;midiDevicesIn("device1", "device2", "device3)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;midiDevicesOut("device1", "device2", "device3)<br>
+* midisetdevicein(0)&nbsp;&nbsp;&nbsp;&nbsp;sets and connects the in device with index 0<br>
+* midisetdeviceout(0)&nbsp;&nbsp;&nbsp;&nbsp;sets and connects the out device with index 0<br>
 
 ### Midi WebSocketServer Bridge - standalone (same functionality as above Midi WebSocketServer Bridge)
 the jar is executable in standalone mode<br>
