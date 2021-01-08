@@ -1,6 +1,7 @@
 # api-webserver README
 
 This extension make it possible to take control of Arduino IDE from a Web Page based client.
+It also have a WebSocket server that is used for midi comms.
 
 ## Install
 
@@ -207,4 +208,10 @@ supports exec. arguments:<br>
 listdevices   (list midi devices)<br>
 port 3001     (starts the websocket server at port 3001)<br>
 
+
+### 1.1.0
+
+* Removed AutoCompleteProvider.java
+  moved to new repository
+  https://github.com/manicken/arduinoAutoComplete
 -----------------------------------------------------------------------------------------------------------
