@@ -13,7 +13,7 @@ It also have a WebSocket server that is used for midi comms.
 * global (into sketchbook folder (defined in Arduino IDE - Preferenses):<br>
 &nbsp;&nbsp;make a new folder in the above defined sketchbook folder<br>
 &nbsp;&nbsp;called tools<br>
-&nbsp;&nbsp;then copy the API_WebServer from the repository into this new "tools" folder.<br>
+&nbsp;&nbsp;then copy folder API_WebServer from the repository into this new "tools" folder.<br>
 
 ### Alternative install
 
