@@ -6,7 +6,7 @@ cd bin
 del/F/Q/S *
 cd ..
 
-javac -cp "%arduinoInstallDir%\lib\pde.jar;%arduinoInstallDir%\lib\arduino-core.jar;%arduinoInstallDir%\lib\rsyntaxtextarea-3.0.3-SNAPSHOT.jar;tool\json-20200518.jar;tool\Java-WebSocket-1.5.1.jar;tool\autocomplete-3.0.4.jar" -d bin src\*.java
+javac -cp "%arduinoInstallDir%\lib\pde.jar;%arduinoInstallDir%\lib\arduino-core.jar;tool\json-20200518.jar;tool\Java-WebSocket-1.5.1.jar" -d bin src\*.java
 if errorlevel 1 goto compileError
 copy MANIFEST.MF bin\MANIFEST.MF
 cd bin

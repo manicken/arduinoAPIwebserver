@@ -53,7 +53,7 @@ import processing.app.SerialPlotter;
 import org.json.*;
 
 
-import com.manicken.AutoCompleteProvider;
+
 import com.manicken.ConfigDialog;
 import com.manicken.MyConsoleOutputStream;
 import com.manicken.MyWebSocketServer;
@@ -208,9 +208,9 @@ public class API_WebServer implements Tool {
 					CustomMenu.Item("Start/Restart", event -> run()),
 					CustomMenu.Item("Stop", event -> DisconnectServers()),
 					CustomMenu.Item("Settings", event -> ShowConfigDialog()),
-					CustomMenu.Item("Start GUI Tool", event -> StartGUItool()),
-					CustomMenu.Item("Init autocomplete", event -> ideh.ActivateAutoCompleteFunctionality()),
-					CustomMenu.Item("test set plotter bg", event -> TestSetPlotterBG())
+					//CustomMenu.Item("Start GUI Tool", event -> StartGUItool()),
+					
+					//CustomMenu.Item("test set plotter bg", event -> TestSetPlotterBG())
 				});
 			cm.Init(useSeparateExtensionsMainMenu);
 

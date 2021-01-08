@@ -20,7 +20,7 @@ import java.nio.file.Path;
 import processing.app.Base;
 import processing.app.BaseNoGui;
 import processing.app.Editor;
-import processing.app.tools.ToolExt;
+import processing.app.tools.Tool;
 import processing.app.Sketch;
 import processing.app.EditorTab;
 import processing.app.syntax.SketchTextArea;
@@ -198,13 +198,6 @@ public class IDEhelper {
 			}
 		};
 		System.setErr(psErr);
-	}
-
-	public void ActivateAutoCompleteFunctionality() {
-		for (int i = 0; i < tabs.size(); i++) {
-			SketchTextArea textArea = tabs.get(i).getTextArea();
-			AutoCompleteProvider acp = new AutoCompleteProvider(textArea, GetJarFileDir());
-		}
 	}
 
 	public void pdeKeywords_fillMissingTokenType() {
