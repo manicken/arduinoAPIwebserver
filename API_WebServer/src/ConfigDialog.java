@@ -21,11 +21,7 @@ public class ConfigDialog extends JPanel {
     public JCheckBox chkAutostart;
     public JCheckBox chkAutoCloseOtherEditor;
     public JCheckBox chkDebugMode;
-    public JLabel lblMidiDeviceIn;
-    public JLabel lblMidiDeviceOut;
-    public JList lstMidiDeviceIn;
-    public JList lstMidiDeviceOut;
-    public JButton btnRefreshMidiDevices;
+    
     public JTextField txtTermCapWebSocketServerPort;
 
     public ConfigDialog() {
@@ -42,11 +38,7 @@ public class ConfigDialog extends JPanel {
         chkAutostart = new JCheckBox ("Autostart Server at Arduino IDE start");
         chkAutoCloseOtherEditor = new JCheckBox ("Autoclose other editor window when new is opened");
         chkDebugMode = new JCheckBox ("Activates some debug output");
-        lblMidiDeviceIn = new JLabel ("Input Devices");
-        lblMidiDeviceOut = new JLabel ("Output Devices");
-        lstMidiDeviceIn = new JList (jcomp8Items);
-        lstMidiDeviceOut = new JList (jcomp8Items);
-        btnRefreshMidiDevices = new JButton ("Refresh MIDI Devices");
+        
         txtTermCapWebSocketServerPort = new JTextField (5);
 
         //adjust size and set layout
@@ -63,11 +55,7 @@ public class ConfigDialog extends JPanel {
         add (chkAutostart);
         add (chkAutoCloseOtherEditor);
         add (chkDebugMode);
-        add (lblMidiDeviceIn);
-        add (lblMidiDeviceOut);
-        add (lstMidiDeviceIn);
-        add (lstMidiDeviceOut);
-        add (btnRefreshMidiDevices);
+        
         add (txtTermCapWebSocketServerPort);
 
         //set component bounds (only needed by Absolute Positioning)
@@ -80,11 +68,7 @@ public class ConfigDialog extends JPanel {
         chkAutostart.setBounds (5, 110, 245, 20);
         chkAutoCloseOtherEditor.setBounds (5, 130, 300, 20);
         chkDebugMode.setBounds (5, 150, 195, 20);
-        lblMidiDeviceIn.setBounds(5, 205, 200, 25);
-        lstMidiDeviceIn.setBounds (5, 230, 200, 355);
-        lblMidiDeviceOut.setBounds(210, 205, 200, 25);
-        lstMidiDeviceOut.setBounds (210, 230, 200, 355);
-        btnRefreshMidiDevices.setBounds (5, 175, 285, 25);
+        
         txtTermCapWebSocketServerPort.setBounds (5, 35, 50, 25);
     }
 

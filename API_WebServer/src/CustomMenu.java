@@ -94,7 +94,10 @@ public class CustomMenu {
 	{
 		for (int i = 0; i < items.length; i++)
 		{
-			thisToolMenu.add(items[i]);
+			if (items[i] != null)
+				thisToolMenu.add(items[i]);
+			else
+				thisToolMenu.addSeparator();
 		}
 	}
 
@@ -103,6 +106,10 @@ public class CustomMenu {
 		JMenuItem newItem = new JMenuItem(text);
 		newItem.addActionListener(action);
 		return newItem;
+	}
+	public static JMenuItem Seperator()
+	{
+		return null;
 	}
 
 	/**

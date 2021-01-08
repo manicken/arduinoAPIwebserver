@@ -52,9 +52,10 @@ import processing.app.SerialPlotter;
 
 import org.json.*;
 
-
+import static processing.app.I18n.tr; // translate (multi language support)
 
 import com.manicken.ConfigDialog;
+import com.manicken.MidiDeviceSelectDialog;
 import com.manicken.MyConsoleOutputStream;
 import com.manicken.MyWebSocketServer;
 import com.manicken.MyHttpHandler;
@@ -87,6 +88,7 @@ public class API_WebServer implements Tool {
 	boolean autoConvertMainCppToSketchMainIno  = true;
 
 	ConfigDialog cd = null;
+	MidiDeviceSelectDialog mdsd = null;
 
 	public Editor editor;
 
@@ -196,7 +198,7 @@ public class API_WebServer implements Tool {
 		//System.out.println("BaseNoGui.getToolsFolder()=" + BaseNoGui.getToolsFolder());
 		//System.out.println("BaseNoGui.getSketchbookFolder()=" + BaseNoGui.getSketchbookFolder());
 
-		System.out.println("startin API_WebServer ...");
+		//System.out.println("startin API_WebServer ...");
 		try{
 			ideh = new IDEhelper(editor);
 			mwsb = new MidiWebSocketBridge();
@@ -206,8 +208,12 @@ public class API_WebServer implements Tool {
 			cm = new CustomMenu(this, editor, thisToolMenuTitle, 
 				new JMenuItem[] {
 					CustomMenu.Item("Start/Restart", event -> run()),
+					CustomMenu.Seperator(),
 					CustomMenu.Item("Stop", event -> DisconnectServers()),
+					CustomMenu.Seperator(),
 					CustomMenu.Item("Settings", event -> ShowConfigDialog()),
+					CustomMenu.Seperator(),
+					CustomMenu.Item("Midi Device Selection", event -> ShowMidiDeviceSelectDialog()),
 					//CustomMenu.Item("Start GUI Tool", event -> StartGUItool()),
 					
 					//CustomMenu.Item("test set plotter bg", event -> TestSetPlotterBG())
@@ -257,23 +263,12 @@ public class API_WebServer implements Tool {
 		} catch (Exception e) {  e.printStackTrace(); }
 	}
 
-	private void refreshMidiDevices()
-	{
-		//cd.lstMidiDevices.clear();
-		cd.lstMidiDeviceIn.setListData(mwsb.midi.GetInDeviceList());
-		cd.lstMidiDeviceOut.setListData(mwsb.midi.GetOutDeviceList());
-	}
+	
 	public void ShowConfigDialog() {
 		if (cd == null)
 		{
 			cd = new ConfigDialog();
-			cd.btnRefreshMidiDevices.addActionListener(new java.awt.event.ActionListener() { 
-				public void actionPerformed(java.awt.event.ActionEvent e) { 
-				    refreshMidiDevices();
-				} 
-			});
 		}
-		refreshMidiDevices(); // this starts with list allready populated
 		cd.txtWebServerPort.setText(Integer.toString(webServerPort));
 		cd.txtTermCapWebSocketServerPort.setText(Integer.toString(tcdwssPort));
 		cd.txtBiDirDataWebSocketServerPort.setText(Integer.toString(bddwssPort));
@@ -281,27 +276,56 @@ public class API_WebServer implements Tool {
 		cd.chkAutoCloseOtherEditor.setSelected(autoCloseOtherEditor);
 		cd.chkAutoConvertMainCppToSketchMainIno.setSelected(autoConvertMainCppToSketchMainIno);
 		cd.chkDebugMode.setSelected(debugPrint);
-		cd.lstMidiDeviceIn.setSelectedIndex(mwsb.midi.selectedInDeviceIndex);
-		cd.lstMidiDeviceOut.setSelectedIndex(mwsb.midi.selectedOutDeviceIndex);
 		
-	   int result = JOptionPane.showConfirmDialog(editor, cd, "API Web Server Config" ,JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		
+	    int result = JOptionPane.showConfirmDialog(editor, cd, "API Web Server Config" ,JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			
-		if (result == JOptionPane.OK_OPTION) {
-			webServerPort = Integer.parseInt(cd.txtWebServerPort.getText());
-			tcdwssPort = Integer.parseInt(cd.txtTermCapWebSocketServerPort.getText());
-			bddwssPort = Integer.parseInt(cd.txtBiDirDataWebSocketServerPort.getText());
-			autostart = cd.chkAutostart.isSelected();
-			debugPrint = cd.chkDebugMode.isSelected();
-			mwsb.midi.selectedInDeviceIndex = cd.lstMidiDeviceIn.getSelectedIndex();
-			mwsb.midi.selectedOutDeviceIndex = cd.lstMidiDeviceOut.getSelectedIndex();
-			autoCloseOtherEditor = cd.chkAutoCloseOtherEditor.isSelected();
-			autoConvertMainCppToSketchMainIno = cd.chkAutoConvertMainCppToSketchMainIno.isSelected();
+		if (result != JOptionPane.OK_OPTION) {
+			//editor.statusNotice("API Web Server " + tr("Config") + " " + tr("Canceled"));
+			return;
+		}
 
-			if (mwsb.midi.OpenDevices())
-				System.out.println("hurray");
+		webServerPort = Integer.parseInt(cd.txtWebServerPort.getText());
+		tcdwssPort = Integer.parseInt(cd.txtTermCapWebSocketServerPort.getText());
+		bddwssPort = Integer.parseInt(cd.txtBiDirDataWebSocketServerPort.getText());
+		autostart = cd.chkAutostart.isSelected();
+		debugPrint = cd.chkDebugMode.isSelected();
+		
+		autoCloseOtherEditor = cd.chkAutoCloseOtherEditor.isSelected();
+		autoConvertMainCppToSketchMainIno = cd.chkAutoConvertMainCppToSketchMainIno.isSelected();
+		editor.statusNotice("");
+		SaveSettings();
+	}
+	private void mdsd_RefreshMidiDevices()
+	{
+		//cd.lstMidiDevices.clear();
+		mdsd.lstMidiDeviceIn.setListData(mwsb.midi.GetInDeviceList());
+		mdsd.lstMidiDeviceOut.setListData(mwsb.midi.GetOutDeviceList());
+	}
+	public void ShowMidiDeviceSelectDialog() {
+		if (mdsd == null)
+		{
+			mdsd = new MidiDeviceSelectDialog();
+			mdsd.btnRefreshMidiDevices.addActionListener(new java.awt.event.ActionListener() { 
+				public void actionPerformed(java.awt.event.ActionEvent e) { 
+				    mdsd_RefreshMidiDevices();
+				} 
+			});
+		}
+		mdsd_RefreshMidiDevices(); // this starts with list allready populated
+		mdsd.lstMidiDeviceIn.setSelectedIndex(mwsb.midi.selectedInDeviceIndex);
+		mdsd.lstMidiDeviceOut.setSelectedIndex(mwsb.midi.selectedOutDeviceIndex);
 
-			SaveSettings();
-		} else { System.out.println("Cancelled"); }
+		int result = JOptionPane.showConfirmDialog(editor, mdsd, "MIDI Devices Select" ,JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		if (result != JOptionPane.OK_OPTION) {
+			//editor.statusNotice("MIDI " + tr("Devices")  + " " + tr("Select") + " " + tr("Canceled"));
+			return;
+		}
+		mwsb.midi.selectedInDeviceIndex = mdsd.lstMidiDeviceIn.getSelectedIndex();
+		mwsb.midi.selectedOutDeviceIndex = mdsd.lstMidiDeviceOut.getSelectedIndex();
+		editor.statusNotice("");
+		if (mwsb.midi.OpenDevices())
+			System.out.println("hurray");
 	}
 	private void LoadSettings()
 	{
@@ -321,9 +345,6 @@ public class API_WebServer implements Tool {
 		PreferencesData.setBoolean("manicken.apiWebServer.autostart", autostart);
 		PreferencesData.setBoolean("manicken.apiWebServer.debugPrint", debugPrint);
 		PreferencesData.setBoolean("manicken.apiWebServer.autoConvertMainCppToSketchMainIno", autoConvertMainCppToSketchMainIno);
-		PreferencesData.set("manicken.apiWebServer.midiInDevice", mwsb.midi.GetCurrentInDeviceNameDescr());
-		PreferencesData.set("manicken.apiWebServer.midiOutDevice", mwsb.midi.GetCurrentOutDeviceNameDescr());
-		
 	}	
 	private void tcdwss_DecodeRawMessage(String message)
 	{
