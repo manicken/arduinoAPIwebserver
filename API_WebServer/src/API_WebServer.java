@@ -343,7 +343,8 @@ public class API_WebServer implements Tool {
 		PreferencesData.setInteger("manicken.apiWebServer.terminalCaptureWebSocketServerPort", tcdwssPort);
 		PreferencesData.setInteger("manicken.apiWebServer.biDirDataWebSocketServerPort", bddwssPort);
 		PreferencesData.setBoolean("manicken.apiWebServer.autostart", autostart);
-		PreferencesData.setBoolean("manicken.apiWebServer.debugPrint", debugPrint);
+        PreferencesData.setBoolean("manicken.apiWebServer.debugPrint", debugPrint);
+        PreferencesData.getBoolean("manicken.apiWebServer.closeOtherEditors", autoCloseOtherEditor);
 		PreferencesData.setBoolean("manicken.apiWebServer.autoConvertMainCppToSketchMainIno", autoConvertMainCppToSketchMainIno);
 	}	
 	private void tcdwss_DecodeRawMessage(String message)

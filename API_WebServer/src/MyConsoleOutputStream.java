@@ -89,8 +89,8 @@ public class MyConsoleOutputStream extends ByteArrayOutputStream {
 	  newLinePrinted = newLinePrinted || text.contains("\n");
 	  if (editorConsole != null) {
 		SwingUtilities.invokeLater(() -> {
-		  //try { editorConsole.insertString(text, attributes); } 
-		  //catch (BadLocationException ble) { /*ignore*/ }
+		  try { editorConsole.insertString(text, attributes); } 
+		  catch (BadLocationException ble) { /*ignore*/ }
 
 		  try { mwss.broadcast("<span style=\"color:"+fgColorHex+";background-color:"+bgColorHex+";\">" + text.replace("\r\n", "<br>").replace("\r", "<br>").replace("\n", "<br>") + "</span>"); }
 		  catch (Exception ex) { /*ignore*/ }//
