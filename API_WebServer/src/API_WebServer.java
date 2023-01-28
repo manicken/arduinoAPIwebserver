@@ -77,7 +77,8 @@ import java.util.TimerTask;
  * Example Tools menu entry.
  */
 public class API_WebServer implements Tool {
-	public String thisToolMenuTitle = "API Web Server";
+
+	public static String thisToolMenuTitle = "API Web Server";
 
 	// settings (theese also defines the default values)
 	boolean debugPrint = false;
@@ -146,8 +147,9 @@ public class API_WebServer implements Tool {
 		mwsb.startBridge(bddwssPort);
 		startTerminalCaptureDataWebSocketServer();
 		OpenPreviousMidi();
-		MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole, ideh.console_stdOutStyle,
-				ideh.console_stdErrStyle, tcdwss);
+		// MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole,
+		// ideh.console_stdOutStyle,
+		// ideh.console_stdErrStyle, tcdwss);
 	}
 
 	public void DisconnectServers() {
@@ -192,7 +194,7 @@ public class API_WebServer implements Tool {
 	}
 
 	private void startWebServer() {
-		API_WebServer other = IDEhelper.GetAnyOtherSimilarTool(editor, thisToolMenuTitle);
+		API_WebServer other = (API_WebServer) IDEhelper.GetAnyOtherSimilarTool(editor, thisToolMenuTitle);
 
 		if (webServer != null)
 			try {
@@ -280,8 +282,9 @@ public class API_WebServer implements Tool {
 					}
 				}, 1000);
 				// ideh.SystemOutHookStart(terminalCaptureWebSocketServerPort);
-				MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole, ideh.console_stdOutStyle,
-						ideh.console_stdErrStyle, tcdwss);
+				// MyConsoleOutputStream.setCurrentEditorConsole(ideh.editorConsole,
+				// ideh.console_stdOutStyle,
+				// ideh.console_stdErrStyle, tcdwss);
 				started = true;
 			}
 
@@ -320,15 +323,19 @@ public class API_WebServer implements Tool {
 
 	public void ShowConfigDialog() {
 		if (cd == null) {
-			API_WebServer other = IDEhelper.GetAnyOtherSimilarTool(editor, thisToolMenuTitle);
+			API_WebServer other = (API_WebServer) IDEhelper.GetAnyOtherSimilarTool(editor, thisToolMenuTitle);
+
+			if (other == null)
+				System.out.println(" @ ShowConfigDialog: other == null");
+
 			if (other != null) {
 				cd = other.cd;
 				cdf = other.cdf;
-				System.out.println("reusing other cd cdf");
+				System.out.println(" @ ShowConfigDialog: *****reusing other cd cdf");
 			} else {
 				cd = new ConfigDialog();
 				cdf = new JFrame("Panel Example");
-
+				System.out.println(" @ ShowConfigDialog: *****creating new cd cdf");
 			}
 			cdf.add(cd);
 			cdf.setSize(400, 400);

@@ -117,28 +117,40 @@ public class IDEhelper {
 	 * for functions
 	 * that need to be excuted for every other similar instanced tools
 	 */
-	public static API_WebServer GetAnyOtherSimilarTool(Editor thisEditor, String thisToolMenuTitle) {
+	public static processing.app.tools.Tool GetAnyOtherSimilarTool(Editor thisEditor, String thisToolMenuTitle) {
 		Base _base = (Base) Reflect.GetField("base", thisEditor);
 		List<Editor> editors = _base.getEditors();
+		System.out.println("editor count:" + editors.size());
 
 		for (int ei = 0; ei < editors.size(); ei++) {
 			Editor _editor = editors.get(ei);
-			if (thisEditor == _editor)
+
+			if (thisEditor == _editor) {
+				System.out.println("skipping same editor");
 				continue;
+			} else {
+				System.out.println("other editor");
+			}
 
 			JMenuBar menubar = _editor.getJMenuBar();
 
 			int existingExtensionsMenuIndex = CustomMenu.GetMenuBarItemIndex(menubar, tr("Extensions"));
-			if (existingExtensionsMenuIndex == -1)
-				continue;
-			JMenu extensionsMenu = (JMenu) menubar.getSubElements()[existingExtensionsMenuIndex];
-			int currentExtMenuIndex = CustomMenu.GetMenuItemIndex(extensionsMenu, thisToolMenuTitle);
-			if (currentExtMenuIndex == -1)
-				continue;
-			JPopupMenu extensionMenu = (JPopupMenu) extensionsMenu.getSubElements()[currentExtMenuIndex];
 
-			API_WebServer otherTool = (API_WebServer) extensionMenu.getClientProperty("tool");
-			return otherTool;
+			if (existingExtensionsMenuIndex == -1) {
+				System.out.println("cannot find existingExtensionsMenu");
+				continue;
+			}
+
+			JMenu extensionsMenu = (JMenu) menubar.getSubElements()[existingExtensionsMenuIndex];
+
+			int currentExtMenuIndex = CustomMenu.GetMenuItemIndex(extensionsMenu, thisToolMenuTitle);
+			if (currentExtMenuIndex == -1) {
+				System.out.println("cannot find " + thisToolMenuTitle);
+				continue;
+			}
+			JPopupMenu extensionMenu = (JPopupMenu) extensionsMenu.getSubElements()[currentExtMenuIndex];
+			System.out.println("extension menu found");
+			return (processing.app.tools.Tool) extensionMenu.getClientProperty("tool");
 		}
 		return null;
 	}
@@ -491,3 +503,67 @@ public class IDEhelper {
 		editor.handleExport(false);
 	}
 }
+
+/*
+ * public static processing.app.tools.Tool GetAnyOtherSimilarTool(Editor
+ * thisEditor, String thisToolMenuTitle) {
+ * Base _base = (Base) Reflect.GetField("base", thisEditor);
+ * List<Editor> editors = _base.getEditors();
+ * System.out.println("editor count:" + editors.size());
+ * 
+ * for (int ei = 0; ei < editors.size(); ei++) {
+ * Editor _editor = editors.get(ei);
+ * if (thisEditor == _editor) {
+ * System.out.println("skipping same editor");
+ * continue;
+ * }
+ * 
+ * 
+ * the following don't work as external tools are not added to internalToolCache
+ * Map<String, processing.app.tools.Tool> internalToolCache = (Map<String,
+ * processing.app.tools.Tool>) Reflect
+ * .GetField("internalToolCache", _editor);
+ * 
+ * internalToolCache.forEach((k, v) -> {
+ * System.out.println("key: " + k + ", value: " + v);
+ * });
+ * 
+ * System.out.println("internalToolCache" + (internalToolCache == null));
+ * 
+ * // for (int ti = 0; ti < internalToolCache.size(); ti++)
+ * processing.app.tools.Tool otherTool = internalToolCache.get(toolClassName);
+ * if (otherTool == null) {
+ * System.out.println("otherTool == null @ GetAnyOtherSimilarTool");
+ * continue;
+ * }
+ * 
+ * return otherTool;
+ * 
+ * 
+ * JMenuBar menubar = _editor.getJMenuBar();
+ * 
+ * int existingExtensionsMenuIndex = CustomMenu.GetMenuBarItemIndex(menubar,
+ * tr("Extensions"));
+ * 
+ * if (existingExtensionsMenuIndex == -1) {
+ * System.out.println("cannot find existingExtensionsMenu");
+ * continue;
+ * }
+ * 
+ * JMenu extensionsMenu = (JMenu)
+ * menubar.getSubElements()[existingExtensionsMenuIndex];
+ * 
+ * int currentExtMenuIndex = CustomMenu.GetMenuItemIndex(extensionsMenu,
+ * thisToolMenuTitle);
+ * if (currentExtMenuIndex == -1) {
+ * System.out.println("cannot find " + thisToolMenuTitle);
+ * continue;
+ * }
+ * JPopupMenu extensionMenu = (JPopupMenu)
+ * extensionsMenu.getSubElements()[currentExtMenuIndex];
+ * 
+ * return (processing.app.tools.Tool) extensionMenu.getClientProperty("tool");
+ * }
+ * return null;
+ * }
+ */
