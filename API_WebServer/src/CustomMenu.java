@@ -23,7 +23,7 @@ public class CustomMenu {
 	public JMenuItem[] items;
 	public Editor editor;
 	public Tool tool;
-	
+
 	public String toolMenuTitle;
 
 	public JMenu toolsMenu = null;
@@ -32,8 +32,7 @@ public class CustomMenu {
 
 	private boolean initOnce = false;
 
-	public CustomMenu(Tool tool, Editor editor, String toolMenuTitle, JMenuItem[] items)
-	{
+	public CustomMenu(Tool tool, Editor editor, String toolMenuTitle, JMenuItem[] items) {
 		this.tool = tool;
 		this.editor = editor;
 		this.toolMenuTitle = toolMenuTitle;
@@ -42,9 +41,10 @@ public class CustomMenu {
 		menubar = editor.getJMenuBar();
 		toolsMenu = (JMenu) Reflect.GetField("toolsMenu", editor);
 	}
-    public void Init(boolean useSeparateExtensionsMainMenu)
-	{
-		if (initOnce) return; // it can only be initialized once
+
+	public void Init(boolean useSeparateExtensionsMainMenu) {
+		if (initOnce)
+			return; // it can only be initialized once
 		initOnce = true;
 
 		if (useSeparateExtensionsMainMenu)
@@ -53,35 +53,33 @@ public class CustomMenu {
 			initAtToolsMenu();
 	}
 
-	private void initAtSeparateExtensionsMenu()
-	{
+	private void initAtSeparateExtensionsMenu() {
 		int existingExtensionsMenuIndex = GetMenuBarItemIndex(menubar, tr("Extensions"));
 		int toolsMenuIndex = GetMenuBarItemIndex(menubar, tr("Tools"));
-		
+
 		if (existingExtensionsMenuIndex == -1)
 			extensionsMenu = new JMenu(tr("Extensions"));//
 		else
-			extensionsMenu = (JMenu)menubar.getSubElements()[existingExtensionsMenuIndex];
+			extensionsMenu = (JMenu) menubar.getSubElements()[existingExtensionsMenuIndex];
 
-		JMenu thisToolMenu = new JMenu(toolMenuTitle);	
+		JMenu thisToolMenu = new JMenuExt(toolMenuTitle, tool);
 
 		if (existingExtensionsMenuIndex == -1)
-			menubar.add(extensionsMenu, toolsMenuIndex+1);
+			menubar.add(extensionsMenu, toolsMenuIndex + 1);
 		menubar.revalidate(); // "repaint" menu bar with the new item
 		extensionsMenu.add(thisToolMenu);
 		// create new special menu
 		CreatePluginMenu(thisToolMenu);
 		// remove original menu at the moment sometimes buggy
-		//JMenu toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
-		//int thisToolMenuIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
-		//toolsMenu.remove(thisToolMenuIndex);
-		//toolsMenu.revalidate();
+		// JMenu toolsMenu = (JMenu) Reflect.GetField("toolsMenu", this.editor);
+		// int thisToolMenuIndex = GetMenuItemIndex(toolsMenu, thisToolMenuTitle);
+		// toolsMenu.remove(thisToolMenuIndex);
+		// toolsMenu.revalidate();
 	}
 
-	private void initAtToolsMenu()
-	{
+	private void initAtToolsMenu() {
 		int thisToolIndex = GetMenuItemIndex(toolsMenu, toolMenuTitle);
-		JMenu thisToolMenu = new JMenu(toolMenuTitle);
+		JMenu thisToolMenu = new JMenuExt(toolMenuTitle, tool);
 
 		// create new special menu
 		CreatePluginMenu(thisToolMenu);
@@ -90,10 +88,9 @@ public class CustomMenu {
 		toolsMenu.insert(thisToolMenu, thisToolIndex);
 	}
 
-	private void CreatePluginMenu(JMenu thisToolMenu)
-	{
-		for (int i = 0; i < items.length; i++)
-		{
+	private void CreatePluginMenu(JMenu thisToolMenu) {
+		for (int i = 0; i < items.length; i++) {
+			// items[i].setr
 			if (items[i] != null)
 				thisToolMenu.add(items[i]);
 			else
@@ -101,14 +98,13 @@ public class CustomMenu {
 		}
 	}
 
-	public static JMenuItem Item(String text, java.awt.event.ActionListener action)
-	{
+	public static JMenuItem Item(String text, java.awt.event.ActionListener action) {
 		JMenuItem newItem = new JMenuItem(text);
 		newItem.addActionListener(action);
 		return newItem;
 	}
-	public static JMenuItem Seperator()
-	{
+
+	public static JMenuItem Seperator() {
 		return null;
 	}
 
@@ -117,16 +113,18 @@ public class CustomMenu {
 	 * To get the current "Initial" plugin menu index
 	 * So that it can be replaced by
 	 * a custom menu item with submenus
+	 * 
 	 * @param menu
 	 * @param name
 	 * @return
 	 */
 	public static int GetMenuItemIndex(JMenu menu, String name) {
-		//System.out.println("try get menu: " + name);
-		for ( int i = 0; i < menu.getItemCount(); i++) {
-			//System.out.println("try get menu item @ " + i);
+		// System.out.println("try get menu: " + name);
+		for (int i = 0; i < menu.getItemCount(); i++) {
+			// System.out.println("try get menu item @ " + i);
 			JMenuItem item = menu.getItem(i);
-			if (item == null) continue; // happens on seperators
+			if (item == null)
+				continue; // happens on seperators
 			if (item.getText() == name)
 				return i;
 		}
@@ -135,22 +133,23 @@ public class CustomMenu {
 
 	/**
 	 * Experimental way of getting tools menu, not working at the moment
+	 * 
 	 * @param menuBar
 	 * @param name
 	 * @return
 	 */
 	public static int GetMenuBarItemIndex(JMenuBar menuBar, String name) {
-		//System.out.println("try get menu: " + name);
+		// System.out.println("try get menu: " + name);
 		MenuElement[] items = menuBar.getSubElements();
-		for ( int i = 0; i < items.length; i++) {
-			//System.out.println("try get menu item @ " + i);
-			JMenu menu = (JMenu)items[i];
-			if (menu == null) continue; // happens on seperators
+		for (int i = 0; i < items.length; i++) {
+			// System.out.println("try get menu item @ " + i);
+			JMenu menu = (JMenu) items[i];
+			if (menu == null)
+				continue; // happens on seperators
 			if (menu.getText() == name)
 				return i;
 		}
 		return -1;
 	}
 
-	
 }
