@@ -24,6 +24,7 @@
 package com.manicken;
 
 import java.io.IOException;
+import java.io.Console;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.StringWriter;
@@ -35,6 +36,7 @@ import java.util.Scanner;
 import java.util.prefs.Preferences;
 
 import javax.lang.model.util.ElementScanner6;
+import javax.swing.JFrame;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
@@ -314,10 +316,26 @@ public class API_WebServer implements Tool {
 		}
 	}
 
+	public JFrame cdf = null;
+
 	public void ShowConfigDialog() {
 		if (cd == null) {
-			cd = new ConfigDialog();
+			API_WebServer other = IDEhelper.GetAnyOtherSimilarTool(editor, thisToolMenuTitle);
+			if (other != null) {
+				cd = other.cd;
+				cdf = other.cdf;
+				System.out.println("reusing other cd cdf");
+			} else {
+				cd = new ConfigDialog();
+				cdf = new JFrame("Panel Example");
+
+			}
+			cdf.add(cd);
+			cdf.setSize(400, 400);
+			// cdf.setLayout(null);
+
 		}
+		cdf.setVisible(true);
 		cd.txtWebServerPort.setText(Integer.toString(webServerPort));
 		cd.txtTermCapWebSocketServerPort.setText(Integer.toString(tcdwssPort));
 		cd.txtBiDirDataWebSocketServerPort.setText(Integer.toString(bddwssPort));
@@ -326,13 +344,19 @@ public class API_WebServer implements Tool {
 		cd.chkAutoConvertMainCppToSketchMainIno.setSelected(autoConvertMainCppToSketchMainIno);
 		cd.chkDebugMode.setSelected(debugPrint);
 
-		int result = JOptionPane.showConfirmDialog(editor, cd, "API Web Server Config", JOptionPane.OK_CANCEL_OPTION,
-				JOptionPane.PLAIN_MESSAGE);
-
-		if (result != JOptionPane.OK_OPTION) {
-			// editor.statusNotice("API Web Server " + tr("Config") + " " + tr("Canceled"));
-			return;
-		}
+		// int result = JOptionPane.showConfirmDialog(editor, cd, "API Web Server
+		// Config", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		/*
+		 * int result = JOptionPane.show.showInputDialog(editor, cd,
+		 * "API Web Server Config", JOptionPane.OK_CANCEL_OPTION,
+		 * JOptionPane.PLAIN_MESSAGE);
+		 * 
+		 * if (result != JOptionPane.OK_OPTION) {
+		 * // editor.statusNotice("API Web Server " + tr("Config") + " " +
+		 * tr("Canceled"));
+		 * return;
+		 * }
+		 */
 
 		webServerPort = Integer.parseInt(cd.txtWebServerPort.getText());
 		tcdwssPort = Integer.parseInt(cd.txtTermCapWebSocketServerPort.getText());

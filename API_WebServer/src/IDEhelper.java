@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Scanner;
 
 import javax.swing.JMenu;
+import javax.swing.JPopupMenu;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
@@ -134,9 +135,9 @@ public class IDEhelper {
 			int currentExtMenuIndex = CustomMenu.GetMenuItemIndex(extensionsMenu, thisToolMenuTitle);
 			if (currentExtMenuIndex == -1)
 				continue;
-			JMenuExt extensionMenu = (JMenuExt) extensionsMenu.getSubElements()[currentExtMenuIndex];
+			JPopupMenu extensionMenu = (JPopupMenu) extensionsMenu.getSubElements()[currentExtMenuIndex];
 
-			API_WebServer otherTool = (API_WebServer) extensionMenu.tool;
+			API_WebServer otherTool = (API_WebServer) extensionMenu.getClientProperty("tool");
 			return otherTool;
 		}
 		return null;

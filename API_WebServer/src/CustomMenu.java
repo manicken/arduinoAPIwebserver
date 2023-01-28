@@ -9,6 +9,7 @@ import processing.app.Sketch;
 import processing.app.PreferencesData;
 
 import javax.swing.JMenu;
+import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JMenuBar;
@@ -62,7 +63,8 @@ public class CustomMenu {
 		else
 			extensionsMenu = (JMenu) menubar.getSubElements()[existingExtensionsMenuIndex];
 
-		JMenu thisToolMenu = new JMenuExt(toolMenuTitle, tool);
+		JMenu thisToolMenu = (JMenu) new JMenu(toolMenuTitle);
+		thisToolMenu.putClientProperty("tool", tool);
 
 		if (existingExtensionsMenuIndex == -1)
 			menubar.add(extensionsMenu, toolsMenuIndex + 1);
@@ -79,7 +81,8 @@ public class CustomMenu {
 
 	private void initAtToolsMenu() {
 		int thisToolIndex = GetMenuItemIndex(toolsMenu, toolMenuTitle);
-		JMenu thisToolMenu = new JMenuExt(toolMenuTitle, tool);
+		JMenu thisToolMenu = new JMenu(toolMenuTitle);
+		thisToolMenu.putClientProperty("tool", tool);
 
 		// create new special menu
 		CreatePluginMenu(thisToolMenu);
