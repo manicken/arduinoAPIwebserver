@@ -37,6 +37,7 @@ import java.util.prefs.Preferences;
 
 import javax.lang.model.util.ElementScanner6;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
@@ -107,6 +108,14 @@ public class API_WebServer implements Tool {
 	public MyWebSocketServer tcdwss; // Terminal Capture Data Web Socket Server
 
 	boolean started = false;
+
+	// used to store and share Instanced things between different editors
+	// note. Custom Classes cannot be shared between editors
+	// as each editor loads the "Tool" into "different" types
+	// by utilizing the following
+	// toolMenu.putClientProperty("name", instancedObject);
+	// instancedObject = toolMenu.getClientProperty("name");
+	public JMenu toolMenu = null;
 
 	public String getMenuTitle() {// required by tool loader
 		return thisToolMenuTitle;
@@ -194,7 +203,7 @@ public class API_WebServer implements Tool {
 	}
 
 	private void startWebServer() {
-		API_WebServer other = (API_WebServer) IDEhelper.GetAnyOtherSimilarTool(editor, thisToolMenuTitle);
+		Tool other = IDEhelper.GetAnyOtherSimilarTool(editor, thisToolMenuTitle);
 
 		if (webServer != null)
 			try {
@@ -203,7 +212,7 @@ public class API_WebServer implements Tool {
 				System.err.println(e + " @ " + e.getStackTrace() + e.getStackTrace()[0].getLineNumber());
 			}
 		else if (other != null) { // share prev instance
-			webServer = other.webServer;
+			webServer = (HttpServer) Reflect.GetField("webServer", other); // other.webServer;
 			return;
 		}
 		try {
@@ -268,7 +277,7 @@ public class API_WebServer implements Tool {
 
 					// CustomMenu.Item("test set plotter bg", event -> TestSetPlotterBG())
 					});
-			cm.Init(useSeparateExtensionsMainMenu);
+			toolMenu = cm.Init(useSeparateExtensionsMainMenu);
 
 			LoadSettings();
 			if (autostart) {
@@ -322,34 +331,36 @@ public class API_WebServer implements Tool {
 	public JFrame cdf = null;
 
 	public void ShowConfigDialog() {
-		if (cd == null) {
-			API_WebServer other = (API_WebServer) IDEhelper.GetAnyOtherSimilarTool(editor, thisToolMenuTitle);
+		if (cdf == null) {
+			Tool other = IDEhelper.GetAnyOtherSimilarTool(editor, thisToolMenuTitle);
 
 			if (other == null)
 				System.out.println(" @ ShowConfigDialog: other == null");
 
 			if (other != null) {
-				cd = other.cd;
-				cdf = other.cdf;
+				// cd = (ConfigDialog) Reflect.GetField("cd", other); // other.cd;
+				cdf = (JFrame) Reflect.GetField("cdf", other); // other.cdf;
 				System.out.println(" @ ShowConfigDialog: *****reusing other cd cdf");
 			} else {
 				cd = new ConfigDialog();
 				cdf = new JFrame("Panel Example");
+				cdf.add(cd);
+				cdf.setSize(400, 400);
 				System.out.println(" @ ShowConfigDialog: *****creating new cd cdf");
+
+				cd.txtWebServerPort.setText(Integer.toString(webServerPort));
+				cd.txtTermCapWebSocketServerPort.setText(Integer.toString(tcdwssPort));
+				cd.txtBiDirDataWebSocketServerPort.setText(Integer.toString(bddwssPort));
+				cd.chkAutostart.setSelected(autostart);
+				cd.chkAutoCloseOtherEditor.setSelected(autoCloseOtherEditor);
+				cd.chkAutoConvertMainCppToSketchMainIno.setSelected(autoConvertMainCppToSketchMainIno);
+				cd.chkDebugMode.setSelected(debugPrint);
 			}
-			cdf.add(cd);
-			cdf.setSize(400, 400);
+
 			// cdf.setLayout(null);
 
 		}
 		cdf.setVisible(true);
-		cd.txtWebServerPort.setText(Integer.toString(webServerPort));
-		cd.txtTermCapWebSocketServerPort.setText(Integer.toString(tcdwssPort));
-		cd.txtBiDirDataWebSocketServerPort.setText(Integer.toString(bddwssPort));
-		cd.chkAutostart.setSelected(autostart);
-		cd.chkAutoCloseOtherEditor.setSelected(autoCloseOtherEditor);
-		cd.chkAutoConvertMainCppToSketchMainIno.setSelected(autoConvertMainCppToSketchMainIno);
-		cd.chkDebugMode.setSelected(debugPrint);
 
 		// int result = JOptionPane.showConfirmDialog(editor, cd, "API Web Server
 		// Config", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -365,14 +376,19 @@ public class API_WebServer implements Tool {
 		 * }
 		 */
 
-		webServerPort = Integer.parseInt(cd.txtWebServerPort.getText());
-		tcdwssPort = Integer.parseInt(cd.txtTermCapWebSocketServerPort.getText());
-		bddwssPort = Integer.parseInt(cd.txtBiDirDataWebSocketServerPort.getText());
-		autostart = cd.chkAutostart.isSelected();
-		debugPrint = cd.chkDebugMode.isSelected();
-
-		autoCloseOtherEditor = cd.chkAutoCloseOtherEditor.isSelected();
-		autoConvertMainCppToSketchMainIno = cd.chkAutoConvertMainCppToSketchMainIno.isSelected();
+		/*
+		 * right now this cannot be done without a OK/apply button
+		 * webServerPort = Integer.parseInt(cd.txtWebServerPort.getText());
+		 * tcdwssPort = Integer.parseInt(cd.txtTermCapWebSocketServerPort.getText());
+		 * bddwssPort = Integer.parseInt(cd.txtBiDirDataWebSocketServerPort.getText());
+		 * autostart = cd.chkAutostart.isSelected();
+		 * debugPrint = cd.chkDebugMode.isSelected();
+		 * 
+		 * autoCloseOtherEditor = cd.chkAutoCloseOtherEditor.isSelected();
+		 * autoConvertMainCppToSketchMainIno =
+		 * cd.chkAutoConvertMainCppToSketchMainIno.isSelected();
+		 * 
+		 */
 		editor.statusNotice("");
 		SaveSettings();
 	}

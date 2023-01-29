@@ -134,23 +134,20 @@ public class IDEhelper {
 
 			JMenuBar menubar = _editor.getJMenuBar();
 
-			int existingExtensionsMenuIndex = CustomMenu.GetMenuBarItemIndex(menubar, tr("Extensions"));
-
-			if (existingExtensionsMenuIndex == -1) {
+			JMenu extensionsMenu = CustomMenu.GetMenuBarItem(menubar, tr("Extensions"));
+			if (extensionsMenu == null) {
 				System.out.println("cannot find existingExtensionsMenu");
 				continue;
 			}
 
-			JMenu extensionsMenu = (JMenu) menubar.getSubElements()[existingExtensionsMenuIndex];
-
-			int currentExtMenuIndex = CustomMenu.GetMenuItemIndex(extensionsMenu, thisToolMenuTitle);
-			if (currentExtMenuIndex == -1) {
+			JMenuItem currentExtMenu = CustomMenu.GetMenuItem(extensionsMenu, thisToolMenuTitle);
+			if (currentExtMenu == null) {
 				System.out.println("cannot find " + thisToolMenuTitle);
 				continue;
 			}
-			JPopupMenu extensionMenu = (JPopupMenu) extensionsMenu.getSubElements()[currentExtMenuIndex];
+
 			System.out.println("extension menu found");
-			return (processing.app.tools.Tool) extensionMenu.getClientProperty("tool");
+			return (processing.app.tools.Tool) currentExtMenu.getClientProperty("tool");
 		}
 		return null;
 	}
